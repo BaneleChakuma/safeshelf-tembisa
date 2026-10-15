@@ -1,0 +1,414 @@
+{
+  "repo": {
+    "owner": "BaneleChakuma",
+    "name": "safeshelf-tembisa",
+    "visibility": "public",
+    "description": "Data pipeline that helps keep expired food off Tembisa supermarket shelves and keeps delivery trucks safe."
+  },
+  "project": {
+    "title": "SafeShelf Tembisa",
+    "description": "Planning board for the SafeShelf Tembisa data engineering project.",
+    "readme": "Planning board for **SafeShelf Tembisa**, a data engineering elective project.\n\n- Every issue belongs to an iteration (milestone) and has an epic and a priority label.\n- Columns: Todo → In Progress → Done.\n- The full plan is in `docs/PLAN.md` in the repository."
+  },
+  "labels": [
+    {
+      "name": "user story",
+      "color": "0E8A16",
+      "description": "Something a user needs, written as a user story"
+    },
+    {
+      "name": "task",
+      "color": "1D76DB",
+      "description": "Technical or setup work"
+    },
+    {
+      "name": "bug",
+      "color": "D73A4A",
+      "description": "Something isn't working"
+    },
+    {
+      "name": "epic: setup",
+      "color": "C5DEF5",
+      "description": "Repository, tools and ways of working"
+    },
+    {
+      "name": "epic: data model",
+      "color": "BFD4F2",
+      "description": "ER diagram, schema, keys and reference data"
+    },
+    {
+      "name": "epic: ingestion",
+      "color": "D4C5F9",
+      "description": "Getting data into the pipeline"
+    },
+    {
+      "name": "epic: data quality",
+      "color": "F9D0C4",
+      "description": "Validation, cleaning and rejected records"
+    },
+    {
+      "name": "epic: reports",
+      "color": "FEF2C0",
+      "description": "SQL reports and alerts"
+    },
+    {
+      "name": "epic: safety & privacy",
+      "color": "F7C6C7",
+      "description": "Police-only data, access rules and POPIA"
+    },
+    {
+      "name": "epic: automation",
+      "color": "C2E0C6",
+      "description": "One-command runs, tests and GitHub Actions"
+    },
+    {
+      "name": "epic: docs",
+      "color": "EDEDED",
+      "description": "README, documentation and the demo"
+    },
+    {
+      "name": "priority: must",
+      "color": "B60205",
+      "description": "Must have: needed for the project to work"
+    },
+    {
+      "name": "priority: should",
+      "color": "D93F0B",
+      "description": "Should have: important, but the project works without it"
+    },
+    {
+      "name": "priority: could",
+      "color": "FBCA04",
+      "description": "Could have: only if there is time"
+    }
+  ],
+  "milestones": [
+    {
+      "title": "Iteration 0 - Plan and set up",
+      "due": "2026-10-18",
+      "description": "Plan the project, set up the GitHub board, repo structure and Python environment."
+    },
+    {
+      "title": "Iteration 1 - Data model",
+      "due": "2026-10-25",
+      "description": "Design the ER diagram and build the SQLite database with keys and constraints."
+    },
+    {
+      "title": "Iteration 2 - Ingest and clean",
+      "due": "2026-11-08",
+      "description": "Simulate the data, then extract, validate, clean and load it."
+    },
+    {
+      "title": "Iteration 3 - Reports and alerts",
+      "due": "2026-11-15",
+      "description": "SQL reports that answer the community's questions, and the daily report."
+    },
+    {
+      "title": "Iteration 4 - Delivery safety and privacy",
+      "due": "2026-11-22",
+      "description": "Police-only trip alerts, role-based views and POPIA data rules."
+    },
+    {
+      "title": "Iteration 5 - Automate, test and present",
+      "due": "2026-11-29",
+      "description": "One-command pipeline, automated tests, daily GitHub Actions run, final docs and demo."
+    },
+    {
+      "title": "Stretch goals",
+      "due": null,
+      "description": "Extra features once every must-have issue is done."
+    }
+  ],
+  "issues": [
+    {
+      "title": "Set up the repository structure",
+      "labels": [
+        "task",
+        "epic: setup",
+        "priority: must"
+      ],
+      "milestone": "Iteration 0 - Plan and set up",
+      "body": "**What needs doing**\nCreate the folders the project will use, so code, data, SQL and docs each have a clear home.\n\n**Acceptance criteria**\n- [ ] Folders created: `data/reference`, `data/templates`, `sql/reports`, `src/safeshelf`, `tests` (empty folders get a `.gitkeep`)\n- [ ] `.gitignore` keeps generated data, reports and the database file out of Git (a first version is already in the repo)\n- [ ] README has a \"Project structure\" section that explains each folder\n- [ ] A licence is chosen and added (check whether your school has a rule first)\n"
+    },
+    {
+      "title": "Set up the Python environment",
+      "labels": [
+        "task",
+        "epic: setup",
+        "priority: must"
+      ],
+      "milestone": "Iteration 0 - Plan and set up",
+      "body": "**What needs doing**\nMake it easy for anyone, including future me, to run the project on a fresh computer.\n\n**Acceptance criteria**\n- [ ] A virtual environment works: `python3 -m venv .venv` and `source .venv/bin/activate`\n- [ ] `requirements.txt` lists the packages the project needs (start with `pytest`)\n- [ ] `python -m pytest` runs (zero tests is fine for now)\n- [ ] README has a \"How to run\" section with these steps\n"
+    },
+    {
+      "title": "Design the ER diagram",
+      "labels": [
+        "user story",
+        "epic: data model",
+        "priority: must"
+      ],
+      "milestone": "Iteration 1 - Data model",
+      "body": "**User story**\nAs a data engineer, I want an ER diagram of stores, suppliers, products, deliveries, shelf checks, community reports and truck trips, so that everyone can see how the data connects before I write any code.\n\n**Acceptance criteria**\n- [ ] The diagram is in `docs/DATA_MODEL.md` (Mermaid, so GitHub draws it)\n- [ ] Every entity has a primary key\n- [ ] Every relationship shows its cardinality (for example 1:M)\n- [ ] A foreign key is listed for every relationship\n- [ ] A peer or facilitator has reviewed it\n\n**Notes**\nA first draft is already in `docs/DATA_MODEL.md`. Review it, improve it, and explain any changes.\n"
+    },
+    {
+      "title": "Create the database schema with keys and constraints",
+      "labels": [
+        "user story",
+        "epic: data model",
+        "priority: must"
+      ],
+      "milestone": "Iteration 1 - Data model",
+      "body": "**User story**\nAs a data engineer, I want a SQL schema with primary keys, foreign keys and CHECK constraints, so that the database itself refuses bad data, like a delivery to a store that doesn't exist.\n\n**Acceptance criteria**\n- [ ] `sql/schema.sql` creates every table from the ER diagram in SQLite\n- [ ] Every table has a primary key, and every relationship has a foreign key\n- [ ] Foreign keys are switched on with `PRAGMA foreign_keys = ON`\n- [ ] CHECK constraints: `quantity > 0`, `expiry_date >= production_date`, `shelf_life_days > 0`, and allowed values for condition, issue type and event type\n- [ ] Running the script twice doesn't fail (`CREATE TABLE IF NOT EXISTS`)\n- [ ] A test proves an invalid insert is rejected\n\n**Depends on**\n- Design the ER diagram\n"
+    },
+    {
+      "title": "Add reference data: stores, suppliers and products",
+      "labels": [
+        "user story",
+        "epic: data model",
+        "priority: must"
+      ],
+      "milestone": "Iteration 1 - Data model",
+      "body": "**User story**\nAs a data engineer, I want reference lists of stores, suppliers and products, with each product's shelf life and an \"essential\" flag, so that the pipeline can check every delivery and shelf check against them.\n\n**Acceptance criteria**\n- [ ] `data/reference/stores.csv`: at least 8 made-up stores across Tembisa sections\n- [ ] `data/reference/suppliers.csv`: at least 5 suppliers (bakery, dairy, drinks, wholesaler and so on)\n- [ ] `data/reference/products.csv`: at least 15 products with `shelf_life_days`, `is_essential` and `needs_cold_storage`\n- [ ] Essentials include bread, milk, maize meal, eggs and cold drinks\n- [ ] A script loads the reference data into the database\n- [ ] The README says the store names are made up\n\n**Depends on**\n- Create the database schema with keys and constraints\n"
+    },
+    {
+      "title": "Build a data simulator",
+      "labels": [
+        "user story",
+        "epic: ingestion",
+        "priority: must"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a data engineer, I want to generate realistic daily data for deliveries, shelf checks, community reports and truck trips, so that I can build and test the pipeline before real data exists.\n\n**Acceptance criteria**\n- [ ] `python -m safeshelf.simulate --days 30 --seed 42` writes one file per data type per day into `data/incoming/`\n- [ ] The same seed always produces the same data\n- [ ] It includes deliberate problems: expired items on shelves, deliveries close to expiry, missing fields, misspelled product names and delayed trucks\n- [ ] About 5 to 10% of rows are \"bad\", so validation has something to catch\n- [ ] The README explains how to run it\n\n**Depends on**\n- Add reference data: stores, suppliers and products\n"
+    },
+    {
+      "title": "Shelf-check records for committee members",
+      "labels": [
+        "user story",
+        "epic: ingestion",
+        "priority: must"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a committee member, I want to record a shelf check: the store, product, batch number, expiry date and the condition I found, so that expired or spoiled food is written down with evidence.\n\n**Acceptance criteria**\n- [ ] Template `data/templates/shelf_checks.csv`, with a short description of each column\n- [ ] Condition is one of: OK, EXPIRED, MOULDY, DAMAGED_PACKAGING, SWOLLEN, NOT_COLD\n- [ ] An optional photo reference column\n- [ ] Only the member's ID is recorded, not their full name (POPIA)\n- [ ] The pipeline loads shelf-check files into `shelf_checks`\n"
+    },
+    {
+      "title": "Delivery records for stores",
+      "labels": [
+        "user story",
+        "epic: ingestion",
+        "priority: must"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a store manager, I want every delivery recorded with its batch numbers, production dates and expiry dates, so that I can prove what I received and when.\n\n**Acceptance criteria**\n- [ ] Templates for deliveries and delivery items (one delivery has many items)\n- [ ] Every item is linked to a product, with batch code, quantity, production date and expiry date\n- [ ] A delivery can be linked to the truck trip that brought it\n- [ ] The pipeline loads them into `deliveries` and `delivery_items`\n"
+    },
+    {
+      "title": "Anonymous community reports",
+      "labels": [
+        "user story",
+        "epic: ingestion",
+        "priority: must"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a community member, I want to report a food problem without giving my name, so that I can warn others without fear.\n\n**Acceptance criteria**\n- [ ] Report fields: store, product (optional), date, issue type (EXPIRED, SPOILED, BAD_SMELL, SICK_AFTER_EATING, OTHER) and a short description\n- [ ] No name, phone number or ID number is collected or stored\n- [ ] Reports start as unverified, and a committee member can mark one as verified\n- [ ] The pipeline loads reports into `community_reports`\n"
+    },
+    {
+      "title": "Truck trip updates (police only)",
+      "labels": [
+        "user story",
+        "epic: ingestion",
+        "priority: must"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a supplier, I want my trucks to send trip updates (departed, checkpoint, stopped, arrived) with time and location, so that the police can respond quickly if a truck is in trouble.\n\n**Acceptance criteria**\n- [ ] Template for trip updates: trip ID, vehicle ID, time, event type, latitude, longitude\n- [ ] Event type is one of: DEPARTED, CHECKPOINT, STOPPED, ARRIVED\n- [ ] The pipeline loads updates into `trips` and `trip_events`\n- [ ] Location data goes only into `trip_events`, never into any other table or report\n\n**Notes**\nA real truck would send this from a GPS tracker. In this project the simulator creates it.\n"
+    },
+    {
+      "title": "Process each incoming file only once",
+      "labels": [
+        "user story",
+        "epic: ingestion",
+        "priority: must"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a data engineer, I want the pipeline to pick up only new files from `data/incoming/`, so that running it twice never creates duplicate records.\n\n**Acceptance criteria**\n- [ ] A `pipeline_runs` table records each file name, when it was processed, and the rows read, loaded and rejected\n- [ ] Files that were already processed are skipped\n- [ ] Running the pipeline twice in a row gives exactly the same database (it's idempotent), and a test proves it\n"
+    },
+    {
+      "title": "Validate records and quarantine bad ones",
+      "labels": [
+        "user story",
+        "epic: data quality",
+        "priority: must"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a data engineer, I want every record checked against clear rules, with bad records saved to a rejected file together with the reason, so that bad data never reaches the reports.\n\n**Acceptance criteria**\n- [ ] Rules: required fields present; store and product exist; dates valid and not in the future; expiry on or after production date; quantity above 0; condition, issue type and event type are allowed values\n- [ ] Rejected rows are written to `data/rejected/<file>_rejected.csv` with a `reason` column\n- [ ] Each run prints how many rows were loaded and how many were rejected\n- [ ] At least one test per rule\n"
+    },
+    {
+      "title": "Clean and standardise the data",
+      "labels": [
+        "user story",
+        "epic: data quality",
+        "priority: should"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a data engineer, I want names and dates written the same way every time, so that 'White Bread 700g', 'white bread' and 'BREAD WHITE' all count as the same product.\n\n**Acceptance criteria**\n- [ ] Extra spaces are trimmed and text casing is consistent\n- [ ] All dates are converted to `YYYY-MM-DD`\n- [ ] Product aliases are matched using `data/reference/product_aliases.csv`\n- [ ] Exact duplicate rows are removed\n- [ ] A test for each cleaning step\n"
+    },
+    {
+      "title": "Load clean data into the database",
+      "labels": [
+        "user story",
+        "epic: ingestion",
+        "priority: must"
+      ],
+      "milestone": "Iteration 2 - Ingest and clean",
+      "body": "**User story**\nAs a data engineer, I want clean records loaded into SQLite in the right order (reference data first, then deliveries, then delivery items), so that foreign keys are always satisfied.\n\n**Acceptance criteria**\n- [ ] Each file is loaded inside a transaction (all or nothing)\n- [ ] Foreign keys are switched on while loading\n- [ ] Row counts in the database match the \"loaded\" counts in `pipeline_runs`\n- [ ] The database can be rebuilt from scratch with one command\n\n**Depends on**\n- Validate records and quarantine bad ones\n"
+    },
+    {
+      "title": "Report: expired food still on shelves",
+      "labels": [
+        "user story",
+        "epic: reports",
+        "priority: must"
+      ],
+      "milestone": "Iteration 3 - Reports and alerts",
+      "body": "**User story**\nAs a committee member, I want a daily list of expired or spoiled items found on shelves, per store, so that we can ask the store to remove them immediately.\n\n**Acceptance criteria**\n- [ ] Query in `sql/reports/expired_on_shelf.sql`\n- [ ] Columns: store, section, product, batch, expiry date, days past expiry, condition, date checked\n- [ ] Sorted by store, then by most days past expiry\n- [ ] Included in the daily report\n"
+    },
+    {
+      "title": "Report: essentials about to expire",
+      "labels": [
+        "user story",
+        "epic: reports",
+        "priority: must"
+      ],
+      "milestone": "Iteration 3 - Reports and alerts",
+      "body": "**User story**\nAs a store manager, I want a list of essential items that expire in the next 2 days, so that I can discount or remove them before they go bad.\n\n**Acceptance criteria**\n- [ ] The number of days is a setting (default 2)\n- [ ] Essential products only\n- [ ] Uses the most recent shelf check for each batch\n- [ ] Sorted by expiry date, soonest first\n"
+    },
+    {
+      "title": "Report: suppliers delivering near-expiry stock",
+      "labels": [
+        "user story",
+        "epic: reports",
+        "priority: should"
+      ],
+      "milestone": "Iteration 3 - Reports and alerts",
+      "body": "**User story**\nAs a committee member, I want to see which suppliers deliver food that has already used up most of its shelf life, so that suppliers can be held accountable.\n\n**Acceptance criteria**\n- [ ] For every delivered item: shelf life left on delivery = days until expiry ÷ shelf life in days\n- [ ] Items with less than 50% of their shelf life left are flagged (for bread: less than 2 days)\n- [ ] Summary per supplier: items delivered, items flagged, % flagged (uses `GROUP BY` and `HAVING`)\n"
+    },
+    {
+      "title": "Store food-safety scoreboard",
+      "labels": [
+        "user story",
+        "epic: reports",
+        "priority: should"
+      ],
+      "milestone": "Iteration 3 - Reports and alerts",
+      "body": "**User story**\nAs a community member, I want a simple scoreboard of stores for the last 30 days, so that I know where food is checked and safe.\n\n**Acceptance criteria**\n- [ ] The score uses verified findings only: expired or spoiled items on shelves, verified community reports and near-expiry deliveries\n- [ ] The scoring formula is explained in the docs\n- [ ] Stores are ranked from best to worst\n- [ ] It shows counts, not report text, and no personal information\n"
+    },
+    {
+      "title": "Daily report file",
+      "labels": [
+        "user story",
+        "epic: reports",
+        "priority: must"
+      ],
+      "milestone": "Iteration 3 - Reports and alerts",
+      "body": "**User story**\nAs a committee member, I want one easy-to-read daily report, so that I can share the results at community meetings.\n\n**Acceptance criteria**\n- [ ] Written to `reports/daily_YYYY-MM-DD.md`, plus CSV versions of each table\n- [ ] Starts with summary numbers: checks done, problems found, rows rejected\n- [ ] Contains the four food-safety reports\n- [ ] Contains no truck locations and no personal information\n"
+    },
+    {
+      "title": "Police alert: delayed trucks and unexpected stops",
+      "labels": [
+        "user story",
+        "epic: safety & privacy",
+        "priority: must"
+      ],
+      "milestone": "Iteration 4 - Delivery safety and privacy",
+      "body": "**User story**\nAs a police officer, I want to see delivery trips that are running late or have stopped unexpectedly, so that we can respond quickly to a possible hijacking.\n\n**Acceptance criteria**\n- [ ] Flags trips more than 30 minutes behind their planned arrival (a setting)\n- [ ] Flags stops longer than 10 minutes that aren't at a delivery store (a setting)\n- [ ] Lists the trip, vehicle, reason flagged, and the last known time and location\n- [ ] Written to a separate police report file, never included in community or store reports\n\n**Depends on**\n- Truck trip updates (police only)\n"
+    },
+    {
+      "title": "Role-based views: who can see what",
+      "labels": [
+        "user story",
+        "epic: safety & privacy",
+        "priority: must"
+      ],
+      "milestone": "Iteration 4 - Delivery safety and privacy",
+      "body": "**User story**\nAs a supplier, I want my trucks' locations shared only with the police, so that nobody can use SafeShelf to plan a heist.\n\n**Acceptance criteria**\n- [ ] SQL views: `community_view`, `committee_view`, `store_view` and `police_view`\n- [ ] Location columns only exist in `police_view`\n- [ ] Every report is built from its own view\n- [ ] A test checks that no location column appears in community, committee or store outputs\n- [ ] Access rules are documented in `docs/DATA_GOVERNANCE.md`\n"
+    },
+    {
+      "title": "Privacy rules and data clean-up (POPIA)",
+      "labels": [
+        "user story",
+        "epic: safety & privacy",
+        "priority: should"
+      ],
+      "milestone": "Iteration 4 - Delivery safety and privacy",
+      "body": "**User story**\nAs a delivery driver, I want my truck's location history deleted after 30 days, so that my movements aren't stored forever.\n\n**Acceptance criteria**\n- [ ] The pipeline deletes location data older than 30 days from `trip_events` on every run\n- [ ] Community reports never store a name, phone number or ID number\n- [ ] `docs/DATA_GOVERNANCE.md` is reviewed and matches what the code really does\n- [ ] Retention periods are settings, not numbers hard-coded in the code\n"
+    },
+    {
+      "title": "Run the whole pipeline with one command",
+      "labels": [
+        "user story",
+        "epic: automation",
+        "priority: must"
+      ],
+      "milestone": "Iteration 5 - Automate, test and present",
+      "body": "**User story**\nAs a data engineer, I want one command that runs simulate → extract → validate → clean → load → report, so that anyone can reproduce my results on a fresh clone.\n\n**Acceptance criteria**\n- [ ] `python -m safeshelf run --days 30` runs every step\n- [ ] Works on a fresh clone by following the README\n- [ ] Prints a short summary: files processed, rows loaded, rows rejected, alerts found\n- [ ] Stops with a clear error message and exit code if a step fails\n"
+    },
+    {
+      "title": "Automated tests",
+      "labels": [
+        "user story",
+        "epic: automation",
+        "priority: must"
+      ],
+      "milestone": "Iteration 5 - Automate, test and present",
+      "body": "**User story**\nAs a data engineer, I want automated tests for validation, cleaning and reports, so that changes don't silently break the pipeline.\n\n**Acceptance criteria**\n- [ ] pytest tests for every validation rule and cleaning step\n- [ ] Each report query is tested against a small test database with known answers\n- [ ] All tests pass with `python -m pytest`\n"
+    },
+    {
+      "title": "Daily pipeline on GitHub Actions",
+      "labels": [
+        "user story",
+        "epic: automation",
+        "priority: should"
+      ],
+      "milestone": "Iteration 5 - Automate, test and present",
+      "body": "**User story**\nAs a data engineer, I want GitHub Actions to run the tests on every push and the pipeline once a day, so that the project keeps working and reports are produced automatically.\n\n**Acceptance criteria**\n- [ ] Workflow in `.github/workflows/pipeline.yml`\n- [ ] Tests run on every push and pull request\n- [ ] A daily scheduled run produces the daily report and uploads it as an artifact\n- [ ] A status badge in the README\n"
+    },
+    {
+      "title": "Final README and demo",
+      "labels": [
+        "task",
+        "epic: docs",
+        "priority: must"
+      ],
+      "milestone": "Iteration 5 - Automate, test and present",
+      "body": "**What needs doing**\nMake the project easy to understand for facilitators, peers and future employers.\n\n**Acceptance criteria**\n- [ ] README covers: problem, solution, architecture diagram, link to the ER diagram, how to run, a sample report, what I learned, next steps\n- [ ] Screenshots of the board and a report\n- [ ] A 5-minute demo: the problem, a live pipeline run, the reports, lessons learned\n"
+    },
+    {
+      "title": "Community dashboard (Streamlit)",
+      "labels": [
+        "user story",
+        "epic: reports",
+        "priority: could"
+      ],
+      "milestone": "Stretch goals",
+      "body": "**User story**\nAs a community member, I want to see the store scoreboard and alerts on a simple web page, so that I don't have to read report files.\n\n**Acceptance criteria**\n- [ ] A Streamlit app that reads from `community_view` only\n- [ ] Shows the scoreboard and this week's verified problems\n- [ ] Runs with one command, with instructions in the README\n"
+    },
+    {
+      "title": "Capture shelf checks on a phone (Google Forms)",
+      "labels": [
+        "user story",
+        "epic: ingestion",
+        "priority: could"
+      ],
+      "milestone": "Stretch goals",
+      "body": "**User story**\nAs a committee member, I want to submit shelf checks from my phone, so that recording a check takes less than a minute in the shop.\n\n**Acceptance criteria**\n- [ ] A Google Form with the same fields as the shelf-check template\n- [ ] Form responses exported as CSV into `data/incoming/`\n- [ ] The pipeline validates and loads them like any other file\n"
+    },
+    {
+      "title": "Move the database to MySQL or PostgreSQL in Docker",
+      "labels": [
+        "task",
+        "epic: automation",
+        "priority: could"
+      ],
+      "milestone": "Stretch goals",
+      "body": "**What needs doing**\nRun the database as a real server, closer to what companies use.\n\n**Acceptance criteria**\n- [ ] `docker-compose.yml` starts MySQL or PostgreSQL\n- [ ] The schema and reports work on the new database\n- [ ] Real database users and roles replace the SQLite views for access control\n- [ ] The README explains how to switch\n"
+    }
+  ]
+}
