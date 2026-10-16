@@ -84,6 +84,7 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | [User stories](docs/USER_STORIES.md) | Every story with acceptance criteria, grouped by iteration |
 | [Data model](docs/DATA_MODEL.md) | ER diagram, tables, keys and constraints |
 | [Data governance](docs/DATA_GOVERNANCE.md) | Privacy (POPIA): who can see what, and for how long |
+| [Testing](docs/TESTING.md) | How to run the tests, and what each one expects from the code |
 
 ## About the data
 
