@@ -124,7 +124,7 @@ erDiagram
 | `delivery_items` | `quantity > 0` and `expiry_date >= production_date` |
 | `shelf_checks` | `condition IN ('OK', 'EXPIRED', 'MOULDY', 'DAMAGED_PACKAGING', 'SWOLLEN', 'NOT_COLD')` |
 | `community_reports` | `issue_type IN ('EXPIRED', 'SPOILED', 'BAD_SMELL', 'SICK_AFTER_EATING', 'OTHER')`; `verified` defaults to 0 |
-| `trip_events` | `event_type IN ('DEPARTED', 'CHECKPOINT', 'STOPPED', 'ARRIVED')` |
+| `trip_events` | `event_type IN ('DEPARTED', 'CHECKPOINT', 'STOPPED', 'ARRIVED')`; `latitude` and `longitude` are emptied after 30 days (POPIA) |
 | All tables | Primary key on the ID; foreign keys switched on with `PRAGMA foreign_keys = ON` |
 
 ## Monitoring table
@@ -137,3 +137,9 @@ erDiagram
 | `file_name` (unique) | Name of the incoming file |
 | `processed_at` | When it was processed |
 | `rows_read`, `rows_loaded`, `rows_rejected` | How much data went through, and how much was rejected |
+
+## Views
+
+`sql/schema.sql` also creates one view per audience: `community_view`, `committee_view`,
+`store_view` and `police_view`. Each leaves out what its audience may not see, and each report
+is built from one of them. [DATA_GOVERNANCE.md](DATA_GOVERNANCE.md) lists what's in each view.
