@@ -46,3 +46,16 @@ One delivery has many items, so each row says which delivery it belongs to.
 | quantity | How many were delivered (1 or more) | 24 |
 | production_date | When the batch was made | 2026-11-01 |
 | expiry_date | The expiry date on the packaging (not before the production date) | 2026-11-08 |
+
+## community_reports.csv: an anonymous report from a resident (#9)
+
+No names, phone numbers or ID numbers. If someone types a phone or ID number into the
+description anyway, it's replaced with `[removed]` before it's stored.
+
+| Column | What to write | Example |
+|---|---|---|
+| store_id | The store the report is about | ST02 |
+| product | Optional: the product's ID, name or alias | Brown Bread 700g |
+| reported_at | When the problem was reported | 2026-11-02 17:45 |
+| issue_type | EXPIRED, SPOILED, BAD_SMELL, SICK_AFTER_EATING or OTHER | SPOILED |
+| description | A short description of the problem | The bread was mouldy |
