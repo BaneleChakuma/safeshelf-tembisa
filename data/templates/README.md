@@ -59,3 +59,25 @@ description anyway, it's replaced with `[removed]` before it's stored.
 | reported_at | When the problem was reported | 2026-11-02 17:45 |
 | issue_type | EXPIRED, SPOILED, BAD_SMELL, SICK_AFTER_EATING or OTHER | SPOILED |
 | description | A short description of the problem | The bread was mouldy |
+
+## trips.csv: a supplier's plan for a truck trip (#10)
+
+| Column | What to write | Example |
+|---|---|---|
+| trip_id | A unique ID for the trip | T261102V01 |
+| vehicle_id | The truck, from `data/reference/vehicles.csv` | V01 |
+| planned_departure | When the truck is planned to leave the depot | 2026-11-02 06:00 |
+| planned_arrival | When the trip is planned to end (not before the departure) | 2026-11-02 09:00 |
+
+## trip_events.csv: updates from the truck's tracker during a trip (#10, police only)
+
+| Column | What to write | Example |
+|---|---|---|
+| trip_id | The trip, from `trips.csv` | T261102V01 |
+| event_time | When the update was sent | 2026-11-02 07:05 |
+| event_type | DEPARTED, CHECKPOINT, STOPPED or ARRIVED | STOPPED |
+| latitude | Where the truck was: a number between -90 and 90 | -26.0113 |
+| longitude | A number between -180 and 180 | 28.2189 |
+
+Locations are only ever stored in the `trip_events` table and shown in the police report, and
+they're removed after 30 days.
