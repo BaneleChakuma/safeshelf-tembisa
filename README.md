@@ -37,6 +37,31 @@ flowchart LR
     DB --> R3["Police report"]
 ```
 
+## How to run
+
+You need Python 3.10 or newer. The pipeline will only use Python's standard library; pytest is for the tests.
+
+```bash
+git clone https://github.com/BaneleChakuma/safeshelf-tembisa.git
+cd safeshelf-tembisa
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python -m pytest                      # run the tests
+```
+
+On Ubuntu or Pop!_OS, if `python3 -m venv` complains, run `sudo apt install python3-venv` first.
+Run `source .venv/bin/activate` again in every new terminal.
+
+If `pip install` ends with `from versions: none`, pip couldn't download from PyPI, where Python
+packages come from. Some networks block it: try another connection, such as your phone's
+hotspot. `pip config list` also shows whether one of pip's settings tells it not to use PyPI.
+
+> **Tip: installing without internet.** Download the package files (`.whl`) on a connection
+> that works, put them in one folder, and install from that folder:
+> `pip install --no-index --find-links ~/Downloads/safeshelf-wheels -r requirements.txt`
+
 ## Who it's for
 
 | User | What SafeShelf gives them |
@@ -59,6 +84,7 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | [User stories](docs/USER_STORIES.md) | Every story with acceptance criteria, grouped by iteration |
 | [Data model](docs/DATA_MODEL.md) | ER diagram, tables, keys and constraints |
 | [Data governance](docs/DATA_GOVERNANCE.md) | Privacy (POPIA): who can see what, and for how long |
+| [Testing](docs/TESTING.md) | How to run the tests, and what each one expects from the code |
 
 ## About the data
 

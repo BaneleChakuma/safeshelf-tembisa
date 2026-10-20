@@ -1,0 +1,8 @@
+product_id,product_name,category,shelf_life_days,is_essential,needs_cold_storage
+P01,White Bread 700g,bread,4,1,0
+P02,Brown Bread 700g,bread,4,1,0
+P03,Fresh Milk 1L,dairy,7,1,1
+P04,Maize Meal 5kg,grains,365,1,0
+P05,Large Eggs 6 Pack,eggs,21,1,0
+P06,Cola 2L,drinks,180,1,0
+P07,Potato Chips 125g,snacks,90,0,0
