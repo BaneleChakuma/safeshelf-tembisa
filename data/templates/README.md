@@ -23,3 +23,26 @@ all read the same way. Only the columns below are kept; anything else in the fil
 | checked_at | When you checked | 2026-11-02 09:00 |
 | member_id | Your committee member ID. Never your name (POPIA) | CM01 |
 | photo_ref | Optional: the file name of a photo you took as evidence | IMG_0042.jpg |
+
+## deliveries.csv: a delivery to a store (#8)
+
+| Column | What to write | Example |
+|---|---|---|
+| delivery_id | The delivery note number, unique for every delivery | D261102V011 |
+| store_id | The store that received it | ST01 |
+| supplier_id | The supplier, from `data/reference/suppliers.csv` | SU01 |
+| trip_id | Optional: the truck trip that brought it, from `trips.csv` | T261102V01 |
+| delivered_at | When it was delivered | 2026-11-02 07:10 |
+
+## delivery_items.csv: what was in each delivery (#8)
+
+One delivery has many items, so each row says which delivery it belongs to.
+
+| Column | What to write | Example |
+|---|---|---|
+| delivery_id | The delivery this item came in, from `deliveries.csv` | D261102V011 |
+| product | The product's ID, name or alias | Fresh Milk 1L |
+| batch_code | The batch number on the packaging | D1102-233 |
+| quantity | How many were delivered (1 or more) | 24 |
+| production_date | When the batch was made | 2026-11-01 |
+| expiry_date | The expiry date on the packaging (not before the production date) | 2026-11-08 |
