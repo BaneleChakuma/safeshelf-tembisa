@@ -18,6 +18,8 @@ pytestmark = pytest.mark.issue(22)
 
 
 def test_community_reports_never_store_a_phone_number_or_id_number(project, reference_db, process_incoming):
+    need("safeshelf.privacy", "redact_personal_info", issue=22)
+
     description = "Mouldy bread again. Call me on 082 123 4567, my ID is 9001015009087"
     write_incoming(project, "community_reports", TODAY, [community_report_row(description=description)])
 
