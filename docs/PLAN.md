@@ -147,10 +147,8 @@ Each iteration is a GitHub milestone, and every issue belongs to one. The full l
 |---|---|---|---|
 | 0: Plan and set up | 15 to 18 Oct | Board, repo structure, Python environment | 2 |
 | 1-4: Data model, ingest/clean, reports and alerts, delivery safety and privacy | 20 to 23 Oct | ER diagram and schema; simulator, extract, validate, clean, load; SQL reports; police alerts, role-based views, governance | 20 |
-| 5: Automate, test and present | 23 to 29 Nov | One command, tests, GitHub Actions, demo | 4 |
+| 5: Automate, test and present | 24 to 29 Oct | One command, tests, GitHub Actions, demo | 4 |
 | Stretch goals | After that | Dashboard, phone data capture, MySQL/PostgreSQL | 3 |
-
-Iterations 1 to 4 were originally spread from 19 Oct to 22 Nov, but were combined into one milestone due 23 Oct to match a moved deadline. Iteration 5's milestone is unchanged for now.
 
 If the elective deadline is different, change the dates in `setup/backlog.json` before running the setup script, or edit the milestones on GitHub afterwards.
 
