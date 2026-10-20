@@ -6,9 +6,9 @@ venv/
 .pytest_cache/
 
 # Created by the pipeline (simulated data can always be regenerated)
-data/incoming/
-data/rejected/
-reports/
+/data/incoming/
+/data/rejected/
+/reports/
 *.db
 *.sqlite
 

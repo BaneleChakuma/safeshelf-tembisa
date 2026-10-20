@@ -76,6 +76,19 @@ hotspot. `pip config list` also shows whether one of pip's settings tells it not
 
 Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 
+## Project structure
+
+| Folder | What's in it |
+|---|---|
+| `docs/` | The project plan, user stories, data model, governance and testing docs |
+| `data/reference/` | Reference lists the pipeline checks data against: stores, suppliers, products |
+| `data/templates/` | Example CSV files showing the format each input file should follow |
+| `data/incoming/`, `data/rejected/` | Created by the pipeline at runtime (accepted and rejected input files); not committed to Git |
+| `sql/` | `schema.sql` (the database structure) and `sql/reports/` (the queries behind each report) |
+| `src/safeshelf/` | The pipeline's Python package: extract, validate, clean, load, reports |
+| `tests/` | Unit, acceptance and end-to-end tests — see [the testing guide](docs/TESTING.md) |
+| `setup/` | One-off scripts for setting up the GitHub repo and project board |
+
 ## Project docs
 
 | Document | What's in it |
