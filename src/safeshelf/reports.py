@@ -1,4 +1,4 @@
-"""Reports: the queries in sql/reports, and the files the pipeline writes. Issue #15.
+"""Reports: the queries in sql/reports, and the files the pipeline writes. Issues #15 to #16.
 
 Each report is built from the view for the people who read it (sql/schema.sql), so it can only
 use what they're allowed to see. docs/REPORTS.md explains every report.
@@ -7,6 +7,7 @@ use what they're allowed to see. docs/REPORTS.md explains every report.
 import sqlite3
 from datetime import date
 
+from safeshelf import settings
 from safeshelf.settings import SQL_DIR
 
 
@@ -23,6 +24,16 @@ def _expired(conn, as_of):
     return _run(conn, "expired_on_shelf", as_of=as_of.isoformat())
 
 
+def _essentials(conn, as_of, days=None):
+    days = settings.EXPIRING_SOON_DAYS if days is None else days
+    return _run(conn, "essentials_expiring", as_of=as_of.isoformat(), days=days)
+
+
 def expired_on_shelf(conn: sqlite3.Connection, as_of: date) -> list[dict]:
     """#15: expired or spoiled items found on shelves on `as_of`, per store."""
     return _expired(conn, as_of)[1]
+
+
+def essentials_expiring(conn: sqlite3.Connection, as_of: date, days: int | None = None) -> list[dict]:
+    """#16: essential items expiring within `days` days, soonest first."""
+    return _essentials(conn, as_of, days)[1]
