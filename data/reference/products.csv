@@ -1,0 +1,19 @@
+product_id,product_name,category,shelf_life_days,is_essential,needs_cold_storage
+P01,White Bread 700g,bread,4,1,0
+P02,Brown Bread 700g,bread,4,1,0
+P03,Fresh Milk 1L,dairy,7,1,1
+P04,Fresh Milk 2L,dairy,7,1,1
+P05,Amasi 2L,dairy,14,1,1
+P06,Maize Meal 5kg,grains,365,1,0
+P07,Maize Meal 10kg,grains,365,1,0
+P08,Large Eggs 6 Pack,eggs,21,1,0
+P09,Large Eggs 18 Pack,eggs,21,1,0
+P10,Cola 2L,drinks,180,1,0
+P11,Orange Juice 1L,drinks,30,1,1
+P12,Cooking Oil 2L,groceries,365,1,0
+P13,Sugar 2.5kg,groceries,730,1,0
+P14,Rice 2kg,grains,540,1,0
+P15,Polony 1kg,meat,10,0,1
+P16,Potato Chips 125g,snacks,90,0,0
+P17,Hot Cross Buns 6 Pack,bread,3,0,0
+P18,Yoghurt 1kg,dairy,21,0,1
