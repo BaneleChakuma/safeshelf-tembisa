@@ -62,6 +62,19 @@ hotspot. `pip config list` also shows whether one of pip's settings tells it not
 > that works, put them in one folder, and install from that folder:
 > `pip install --no-index --find-links ~/Downloads/safeshelf-wheels -r requirements.txt`
 
+## Simulating data
+
+There's no real data feed yet, so a simulator writes realistic daily files -- deliveries, shelf
+checks, community reports and truck trips -- into `data/incoming/`, with deliberate problems
+(expired items, misspelled products, delayed trucks and so on) for the pipeline to catch:
+
+```bash
+PYTHONPATH=src python -m safeshelf.simulate --days 30 --seed 42
+```
+
+The same seed always produces the same files. `--start YYYY-MM-DD` picks the first simulated
+day (default: ending today); `--root FOLDER` points it at a different project folder.
+
 ## Who it's for
 
 | User | What SafeShelf gives them |
