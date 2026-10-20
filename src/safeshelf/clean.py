@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 from safeshelf.extract import COLUMNS
+from safeshelf.privacy import redact_personal_info
 
 # Dates people write. Slashes and dashes are read day first, the South African way.
 DATE_FORMATS = ["%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%Y", "%d %b %Y", "%d %B %Y"]
@@ -113,5 +114,7 @@ def clean_row(file_type: str, row: dict[str, str], aliases: dict[str, str]) -> d
             value = parse_datetime(value) or value
         elif value and column == "product":
             value = match_product(value, aliases) or value
+        elif value and column == "description":
+            value = redact_personal_info(value)
         cleaned[column] = value
     return cleaned

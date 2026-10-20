@@ -22,3 +22,6 @@ SCOREBOARD_DAYS = 30
 LATE_MINUTES = 30
 # ...and a stop longer than this, without a delivery, is an alert.
 UNEXPECTED_STOP_MINUTES = 10
+
+# Issue #22: truck locations are removed after this many days (POPIA).
+LOCATION_RETENTION_DAYS = 30
