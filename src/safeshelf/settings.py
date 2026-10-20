@@ -11,3 +11,9 @@ SQL_DIR = PROJECT_DIR / "sql"
 
 # Issue #16: list essential items that expire within this many days.
 EXPIRING_SOON_DAYS = 2
+
+# Issue #17: flag an item delivered with less than this share of its shelf life left.
+NEAR_EXPIRY_THRESHOLD = 0.5
+
+# Issue #18: the scoreboard and the supplier report look back this many days.
+SCOREBOARD_DAYS = 30
