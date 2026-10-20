@@ -1,0 +1,28 @@
+"""Reports: the queries in sql/reports, and the files the pipeline writes. Issue #15.
+
+Each report is built from the view for the people who read it (sql/schema.sql), so it can only
+use what they're allowed to see. docs/REPORTS.md explains every report.
+"""
+
+import sqlite3
+from datetime import date
+
+from safeshelf.settings import SQL_DIR
+
+
+def _run(conn: sqlite3.Connection, name: str, **params) -> tuple[list[str], list[dict]]:
+    """Run sql/reports/<name>.sql with named parameters. Returns the columns and the rows."""
+    cursor = conn.cursor()
+    cursor.row_factory = None
+    cursor.execute((SQL_DIR / "reports" / f"{name}.sql").read_text(encoding="utf-8"), params)
+    columns = [column[0] for column in cursor.description]
+    return columns, [dict(zip(columns, row, strict=True)) for row in cursor.fetchall()]
+
+
+def _expired(conn, as_of):
+    return _run(conn, "expired_on_shelf", as_of=as_of.isoformat())
+
+
+def expired_on_shelf(conn: sqlite3.Connection, as_of: date) -> list[dict]:
+    """#15: expired or spoiled items found on shelves on `as_of`, per store."""
+    return _expired(conn, as_of)[1]
