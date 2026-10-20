@@ -1,4 +1,4 @@
-"""Reports: the queries in sql/reports, and the files the pipeline writes. Issues #15 to #19.
+"""Reports: the queries in sql/reports, and the files the pipeline writes. Issues #15 to #20.
 
 Each report is built from the view for the people who read it (sql/schema.sql), so it can only
 use what they're allowed to see. docs/REPORTS.md explains every report.
@@ -6,7 +6,7 @@ use what they're allowed to see. docs/REPORTS.md explains every report.
 
 import csv
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from safeshelf import settings
@@ -51,6 +51,16 @@ def _scoreboard(conn, as_of, window_days=None):
     )
 
 
+def _alerts(conn, now, late_minutes=None, stop_minutes=None):
+    return _run(
+        conn,
+        "police_trip_alerts",
+        now=now.strftime("%Y-%m-%d %H:%M:%S"),
+        late_minutes=settings.LATE_MINUTES if late_minutes is None else late_minutes,
+        stop_minutes=settings.UNEXPECTED_STOP_MINUTES if stop_minutes is None else stop_minutes,
+    )
+
+
 def expired_on_shelf(conn: sqlite3.Connection, as_of: date) -> list[dict]:
     """#15: expired or spoiled items found on shelves on `as_of`, per store."""
     return _expired(conn, as_of)[1]
@@ -71,6 +81,13 @@ def supplier_near_expiry(
 def store_scoreboard(conn: sqlite3.Connection, as_of: date, window_days: int | None = None) -> list[dict]:
     """#18: every store ranked from best to worst over the last `window_days` days."""
     return _scoreboard(conn, as_of, window_days)[1]
+
+
+def police_trip_alerts(
+    conn: sqlite3.Connection, now: datetime, late_minutes: int | None = None, stop_minutes: int | None = None
+) -> list[dict]:
+    """#20: today's trips that are late or stopped unexpectedly. Police only."""
+    return _alerts(conn, now, late_minutes, stop_minutes)[1]
 
 
 # --- report files ------------------------------------------------------------------------------
@@ -127,4 +144,14 @@ def write_daily_report(conn: sqlite3.Connection, reports_dir: str | Path, as_of:
 
     path = reports_dir / f"daily_{as_of}.md"
     path.write_text("\n".join(text), encoding="utf-8")
+    return path
+
+
+def write_police_report(conn: sqlite3.Connection, reports_dir: str | Path, now: datetime) -> Path:
+    """#20: write reports/police/trip_alerts_<day>.csv, kept apart from every other report."""
+    folder = Path(reports_dir) / "police"
+    folder.mkdir(parents=True, exist_ok=True)
+    columns, rows = _alerts(conn, now)
+    path = folder / f"trip_alerts_{now.date()}.csv"
+    _write_csv(path, columns, rows)
     return path

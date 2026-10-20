@@ -8,6 +8,11 @@ Every run writes the reports for one day (today, or the day given with `--today`
 | Essentials about to expire | Stores | `store_view` | #16 |
 | Suppliers delivering near-expiry stock | Committee | `committee_view` | #17 |
 | Store scoreboard | Community | `community_view` | #18 |
+| Delayed trucks and unexpected stops | **Police only** | `police_view` | #20 |
+
+The first four go into one daily report, `reports/daily_YYYY-MM-DD.md`, with a CSV file per table
+(`reports/daily_YYYY-MM-DD_<table>.csv`). The police alerts go into a separate folder,
+`reports/police/trip_alerts_YYYY-MM-DD.csv`, and never into any other report.
 
 Each report is built from the view for the people who read it (`sql/schema.sql`), so it can
 only use what they're allowed to see ([who can see what](DATA_GOVERNANCE.md)). The queries are
@@ -64,3 +69,16 @@ checks were done (a store that's checked more often has earned more trust), then
 
 The scoreboard shows store names and counts only: no report text, no names and no truck data.
 Unverified community reports never count, so a store isn't judged on rumours.
+
+## Delayed trucks and unexpected stops (#20, police only)
+
+*Which delivery trucks might be in trouble?* For trips planned to leave that day:
+
+- **LATE**: arrived more than `LATE_MINUTES` (30) after the planned arrival, or hasn't arrived
+  and is already past that time.
+- **UNEXPECTED_STOP**: stopped for longer than `UNEXPECTED_STOP_MINUTES` (10) without making a
+  delivery during the stop. A delivery means the truck was unloading at a store, so that stop
+  is expected. This way SafeShelf never needs to store where the stores are.
+
+Columns: trip_id, vehicle_id, registration, reason, last_seen, latitude, longitude. The last
+three say when and where the truck last reported in.

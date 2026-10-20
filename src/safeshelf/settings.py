@@ -17,3 +17,8 @@ NEAR_EXPIRY_THRESHOLD = 0.5
 
 # Issue #18: the scoreboard and the supplier report look back this many days.
 SCOREBOARD_DAYS = 30
+
+# Issue #20: a truck is late this many minutes after its planned arrival time...
+LATE_MINUTES = 30
+# ...and a stop longer than this, without a delivery, is an alert.
+UNEXPECTED_STOP_MINUTES = 10
