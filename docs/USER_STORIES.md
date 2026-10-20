@@ -13,26 +13,26 @@ Numbers match the GitHub issue numbers when the board is created on a new reposi
 |---|---|---|---|---|
 | 1 | Set up the repository structure | task | must | Iteration 0 - Plan and set up |
 | 2 | Set up the Python environment | task | must | Iteration 0 - Plan and set up |
-| 3 | Design the ER diagram | user story | must | Iteration 1 - Data model |
-| 4 | Create the database schema with keys and constraints | user story | must | Iteration 1 - Data model |
-| 5 | Add reference data: stores, suppliers and products | user story | must | Iteration 1 - Data model |
-| 6 | Build a data simulator | user story | must | Iteration 2 - Ingest and clean |
-| 7 | Shelf-check records for committee members | user story | must | Iteration 2 - Ingest and clean |
-| 8 | Delivery records for stores | user story | must | Iteration 2 - Ingest and clean |
-| 9 | Anonymous community reports | user story | must | Iteration 2 - Ingest and clean |
-| 10 | Truck trip updates (police only) | user story | must | Iteration 2 - Ingest and clean |
-| 11 | Process each incoming file only once | user story | must | Iteration 2 - Ingest and clean |
-| 12 | Validate records and quarantine bad ones | user story | must | Iteration 2 - Ingest and clean |
-| 13 | Clean and standardise the data | user story | should | Iteration 2 - Ingest and clean |
-| 14 | Load clean data into the database | user story | must | Iteration 2 - Ingest and clean |
-| 15 | Report: expired food still on shelves | user story | must | Iteration 3 - Reports and alerts |
-| 16 | Report: essentials about to expire | user story | must | Iteration 3 - Reports and alerts |
-| 17 | Report: suppliers delivering near-expiry stock | user story | should | Iteration 3 - Reports and alerts |
-| 18 | Store food-safety scoreboard | user story | should | Iteration 3 - Reports and alerts |
-| 19 | Daily report file | user story | must | Iteration 3 - Reports and alerts |
-| 20 | Police alert: delayed trucks and unexpected stops | user story | must | Iteration 4 - Delivery safety and privacy |
-| 21 | Role-based views: who can see what | user story | must | Iteration 4 - Delivery safety and privacy |
-| 22 | Privacy rules and data clean-up (POPIA) | user story | should | Iteration 4 - Delivery safety and privacy |
+| 3 | Design the ER diagram | user story | must | Iterations 1-4: this week |
+| 4 | Create the database schema with keys and constraints | user story | must | Iterations 1-4: this week |
+| 5 | Add reference data: stores, suppliers and products | user story | must | Iterations 1-4: this week |
+| 6 | Build a data simulator | user story | must | Iterations 1-4: this week |
+| 7 | Shelf-check records for committee members | user story | must | Iterations 1-4: this week |
+| 8 | Delivery records for stores | user story | must | Iterations 1-4: this week |
+| 9 | Anonymous community reports | user story | must | Iterations 1-4: this week |
+| 10 | Truck trip updates (police only) | user story | must | Iterations 1-4: this week |
+| 11 | Process each incoming file only once | user story | must | Iterations 1-4: this week |
+| 12 | Validate records and quarantine bad ones | user story | must | Iterations 1-4: this week |
+| 13 | Clean and standardise the data | user story | should | Iterations 1-4: this week |
+| 14 | Load clean data into the database | user story | must | Iterations 1-4: this week |
+| 15 | Report: expired food still on shelves | user story | must | Iterations 1-4: this week |
+| 16 | Report: essentials about to expire | user story | must | Iterations 1-4: this week |
+| 17 | Report: suppliers delivering near-expiry stock | user story | should | Iterations 1-4: this week |
+| 18 | Store food-safety scoreboard | user story | should | Iterations 1-4: this week |
+| 19 | Daily report file | user story | must | Iterations 1-4: this week |
+| 20 | Police alert: delayed trucks and unexpected stops | user story | must | Iterations 1-4: this week |
+| 21 | Role-based views: who can see what | user story | must | Iterations 1-4: this week |
+| 22 | Privacy rules and data clean-up (POPIA) | user story | should | Iterations 1-4: this week |
 | 23 | Run the whole pipeline with one command | user story | must | Iteration 5 - Automate, test and present |
 | 24 | Automated tests | user story | must | Iteration 5 - Automate, test and present |
 | 25 | Daily pipeline on GitHub Actions | user story | should | Iteration 5 - Automate, test and present |
@@ -71,7 +71,11 @@ Make it easy for anyone, including future me, to run the project on a fresh comp
 - [ ] `python -m pytest` runs (zero tests is fine for now)
 - [ ] README has a "How to run" section with these steps
 
-## Iteration 1 - Data model (due 2026-10-25)
+## Iterations 1-4: this week (due 2026-10-23)
+
+Data model, ingest and clean, reports and alerts, and delivery safety and privacy.
+
+### Data model
 
 Design the ER diagram and build the SQLite database with keys and constraints.
 
@@ -128,7 +132,7 @@ As a data engineer, I want reference lists of stores, suppliers and products, wi
 **Depends on**
 - Create the database schema with keys and constraints
 
-## Iteration 2 - Ingest and clean (due 2026-11-08)
+### Ingest and clean
 
 Simulate the data, then extract, validate, clean and load it.
 
@@ -260,7 +264,7 @@ As a data engineer, I want clean records loaded into SQLite in the right order (
 **Depends on**
 - Validate records and quarantine bad ones
 
-## Iteration 3 - Reports and alerts (due 2026-11-15)
+### Reports and alerts
 
 SQL reports that answer the community's questions, and the daily report.
 
@@ -328,7 +332,7 @@ As a committee member, I want one easy-to-read daily report, so that I can share
 - [ ] Contains the four food-safety reports
 - [ ] Contains no truck locations and no personal information
 
-## Iteration 4 - Delivery safety and privacy (due 2026-11-22)
+### Delivery safety and privacy
 
 Police-only trip alerts, role-based views and POPIA data rules.
 
@@ -375,7 +379,7 @@ As a delivery driver, I want my truck's location history deleted after 30 days, 
 - [ ] `docs/DATA_GOVERNANCE.md` is reviewed and matches what the code really does
 - [ ] Retention periods are settings, not numbers hard-coded in the code
 
-## Iteration 5 - Automate, test and present (due 2026-11-29)
+## Iteration 5 - Automate, test and present (due 2026-10-29)
 
 One-command pipeline, automated tests, daily GitHub Actions run, final docs and demo.
 
