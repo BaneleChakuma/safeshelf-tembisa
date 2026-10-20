@@ -8,3 +8,6 @@ from pathlib import Path
 # The folder this repository was cloned into (this file is in src/safeshelf/).
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 SQL_DIR = PROJECT_DIR / "sql"
+
+# Issue #16: list essential items that expire within this many days.
+EXPIRING_SOON_DAYS = 2
