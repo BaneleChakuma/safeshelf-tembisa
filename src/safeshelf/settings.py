@@ -3,11 +3,21 @@
 To change a rule, change the number here, not inside the code. Each one comes from an issue.
 """
 
+import os
 from pathlib import Path
 
 # The folder this repository was cloned into (this file is in src/safeshelf/).
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 SQL_DIR = PROJECT_DIR / "sql"
+
+# Issue #29: the PostgreSQL database, the one docker-compose.yml starts. To use another one, set
+# SAFESHELF_DATABASE_URL, for example postgresql://user:password@host:5432/safeshelf
+DEFAULT_DATABASE_URL = "postgresql://safeshelf:safeshelf@localhost:5432/safeshelf"
+
+
+def database_url() -> str:
+    """Read every time, so a test (or a command) can point the pipeline at another database."""
+    return os.environ.get("SAFESHELF_DATABASE_URL", DEFAULT_DATABASE_URL)
 
 # Issue #16: list essential items that expire within this many days.
 EXPIRING_SOON_DAYS = 2

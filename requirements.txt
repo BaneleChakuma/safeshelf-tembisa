@@ -1,3 +1,4 @@
 # Packages the project needs. Install them inside the virtual environment with:
 #   pip install -r requirements.txt
+psycopg[binary]==3.2.3  # talks to the PostgreSQL database (#29)
 pytest==9.1.1

@@ -17,8 +17,11 @@ import shutil
 import subprocess
 import sys
 from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 
+import psycopg
+import psycopg.rows
 import pytest
 
 # --------------------------------------------------------------------------------------------
@@ -456,22 +459,32 @@ def read_header(path):
 # Database
 # --------------------------------------------------------------------------------------------
 def _cursor(conn):
-    cursor = conn.cursor()
-    cursor.row_factory = None  # plain tuples, whatever row_factory the project's code uses
-    return cursor
+    return conn.cursor(row_factory=psycopg.rows.tuple_row)  # plain tuples, whatever the project uses
+
+
+def as_text(value):
+    """Dates as 'YYYY-MM-DD', times as 'YYYY-MM-DD HH:MM:SS' and decimals as floats, the way the
+    tests write them."""
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
 
 
 def as_dicts(rows):
-    """Report rows as plain dicts (they may come back as dicts or as sqlite3.Row objects)."""
+    """Report rows as plain dicts."""
     return [dict(row) for row in rows]
 
 
 def query(conn, sql, params=()):
-    """Run a SELECT and return the rows as a list of dicts."""
+    """Run a SELECT and return the rows as a list of dicts (dates and times as text)."""
     cursor = _cursor(conn)
-    cursor.execute(sql, params)
-    names = [column[0] for column in cursor.description]
-    return [dict(zip(names, row, strict=True)) for row in cursor.fetchall()]
+    cursor.execute(sql, params or None)  # no parameters: a % in the SQL is just a %
+    names = [column.name for column in cursor.description]
+    return [{n: as_text(v) for n, v in zip(names, row, strict=True)} for row in cursor.fetchall()]
 
 
 def count_rows(conn, table):
@@ -479,28 +492,55 @@ def count_rows(conn, table):
 
 
 def columns_of(conn, table_or_view):
-    return [row[1] for row in _cursor(conn).execute(f"PRAGMA table_info({table_or_view})")]
+    rows = _cursor(conn).execute(
+        "SELECT column_name FROM information_schema.columns"
+        " WHERE table_schema = current_schema() AND table_name = %s ORDER BY ordinal_position",
+        (table_or_view,),
+    )
+    return [row[0] for row in rows]
 
 
 def table_names(conn):
-    rows = _cursor(conn).execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+    rows = _cursor(conn).execute(
+        "SELECT table_name FROM information_schema.tables"
+        " WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'"
+    )
     return {row[0] for row in rows}
 
 
 def view_names(conn):
-    return {row[0] for row in _cursor(conn).execute("SELECT name FROM sqlite_master WHERE type = 'view'")}
+    rows = _cursor(conn).execute(
+        "SELECT table_name FROM information_schema.views WHERE table_schema = current_schema()"
+    )
+    return {row[0] for row in rows}
 
 
 def insert(conn, table, row):
     """Insert one dict as a row, straight into a table (no Python project code involved)."""
     columns = ", ".join(row)
-    marks = ", ".join("?" for _ in row)
+    marks = ", ".join("%s" for _ in row)
     _cursor(conn).execute(f"INSERT INTO {table} ({columns}) VALUES ({marks})", list(row.values()))
 
 
+def refuse_inserts(conn, table):
+    """Make the database refuse every new row in `table`, to test what happens when loading
+    fails. drop_refusal(conn, table) switches it off again."""
+    conn.execute("CREATE OR REPLACE FUNCTION refuse() RETURNS trigger LANGUAGE plpgsql"
+                 " AS $$ BEGIN RAISE EXCEPTION 'refused'; END $$")
+    conn.execute(f"CREATE TRIGGER refuse_{table} BEFORE INSERT ON {table} FOR EACH ROW EXECUTE FUNCTION refuse()")
+
+
+def drop_refusal(conn, table):
+    conn.execute(f"DROP TRIGGER refuse_{table} ON {table}")
+
+
 def dump(conn):
-    """The whole database as SQL text. Two equal dumps mean two identical databases."""
-    return "\n".join(conn.iterdump())
+    """Every row of every table as text. Two equal dumps mean two identical databases."""
+    lines = []
+    for table in sorted(table_names(conn)):
+        rows = query(conn, f"SELECT * FROM {table}")
+        lines += [f"{table}: {row}" for row in sorted(rows, key=repr)]
+    return "\n".join(lines)
 
 
 # --------------------------------------------------------------------------------------------

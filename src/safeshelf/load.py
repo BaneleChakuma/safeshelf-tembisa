@@ -1,6 +1,6 @@
 """Load: put clean, valid rows into the database. Issue #14."""
 
-import sqlite3
+import psycopg
 
 
 def _text_or_null(value: str) -> str | None:
@@ -60,20 +60,20 @@ MAPPING = {
 }
 
 
-def insert_rows(conn: sqlite3.Connection, file_type: str, rows: list[dict[str, str]]) -> int:
+def insert_rows(conn: psycopg.Connection, file_type: str, rows: list[dict[str, str]]) -> int:
     """Insert the rows of one file without committing, so the caller can save other changes in
     the same transaction. Returns how many went in."""
     mapping = MAPPING[file_type]
     columns = ", ".join(table_column for table_column, _, _ in mapping)
-    placeholders = ", ".join("?" for _ in mapping)
+    placeholders = ", ".join("%s" for _ in mapping)
     values = [[convert(row[incoming]) for _, incoming, convert in mapping] for row in rows]
-    conn.executemany(f"INSERT INTO {file_type} ({columns}) VALUES ({placeholders})", values)
+    conn.cursor().executemany(f"INSERT INTO {file_type} ({columns}) VALUES ({placeholders})", values)
     return len(values)
 
 
-def load_rows(conn: sqlite3.Connection, file_type: str, rows: list[dict[str, str]]) -> int:
+def load_rows(conn: psycopg.Connection, file_type: str, rows: list[dict[str, str]]) -> int:
     """Insert the rows of one file. They all go in, or none do. Returns how many went in."""
-    # `with conn` is one transaction: it commits if every insert works, and undoes them all if
-    # one fails (the error is passed on, so the pipeline knows the file failed).
-    with conn:
+    # One transaction: it commits if every insert works, and undoes them all if one fails (the
+    # error is passed on, so the pipeline knows the file failed).
+    with conn.transaction():
         return insert_rows(conn, file_type, rows)

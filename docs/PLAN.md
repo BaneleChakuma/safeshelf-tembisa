@@ -64,7 +64,7 @@ flowchart LR
     A & B & C & D --> E["Extract: new files only"]
     E --> F["Validate & clean"]
     F -- "bad records" --> R[("Rejected records, with reasons")]
-    F --> G[("SQLite database")]
+    F --> G[("PostgreSQL database")]
     G --> H["SQL reports"]
     H --> I["Daily community report: no locations, no names"]
     H --> J["Store report"]
@@ -76,7 +76,7 @@ The pipeline has five steps:
 1. **Extract**: read new CSV files from `data/incoming/`. Each processed file is recorded in a `pipeline_runs` table, so nothing is ever loaded twice.
 2. **Validate**: check every record against the data quality rules below. Bad records go to `data/rejected/` with the reason.
 3. **Clean**: standardise names and dates, match product aliases (for example, "white bread 700g" and "BREAD WHITE" become the same product) and remove duplicates.
-4. **Load**: insert into SQLite in foreign-key order (stores and products first, then deliveries, then delivery items), inside a transaction.
+4. **Load**: insert into the database in foreign-key order (stores and products first, then deliveries, then delivery items), inside a transaction.
 5. **Report**: run the SQL report queries and write the daily reports.
 
 ### Data quality rules
@@ -131,13 +131,13 @@ Details are in [DATA_GOVERNANCE.md](DATA_GOVERNANCE.md).
 | Tool | Why |
 |---|---|
 | Python 3 | The pipeline code: extract, validate, clean, load, report |
-| SQLite + SQL | A relational database with primary and foreign keys; no server needed, and the same SQL as the course |
+| PostgreSQL + SQL, in Docker | A relational database with primary and foreign keys, and real roles for who can see what. The project started on SQLite (no server needed) and moved to PostgreSQL in #29, to be closer to what companies use |
 | pytest | Automated tests |
 | GitHub Actions | Runs the tests on every push and the pipeline once a day |
 | GitHub Projects | The issue board to plan and track the work |
 | Mermaid | Diagrams in the docs, which GitHub draws automatically |
 
-Stretch: MySQL or PostgreSQL in Docker, a Streamlit dashboard, Google Forms for phone data capture.
+Stretch: PostgreSQL in Docker (done, #29), a Streamlit dashboard, Google Forms for phone data capture.
 
 ## 10. Timeline
 
@@ -181,7 +181,7 @@ If the elective deadline is different, change the dates in `setup/backlog.json` 
 | Course topic | Where it shows up |
 |---|---|
 | ETL and data pipelines | Extract → validate and clean → load → report |
-| Data repositories and RDBMS | The SQLite database |
+| Data repositories and RDBMS | The PostgreSQL database, with a role for each audience |
 | ER diagrams, entities, attributes, cardinality | [DATA_MODEL.md](DATA_MODEL.md) |
 | Primary keys, foreign keys, constraints | `sql/schema.sql` |
 | SQL: `WHERE`, `BETWEEN`, `ORDER BY`, `JOIN`, `GROUP BY`, `HAVING` | The report queries |

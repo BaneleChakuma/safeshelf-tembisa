@@ -5,15 +5,27 @@ pytest reads this file before the tests run. It:
 - adds the --issue option, so `python -m pytest --issue 12` runs only the tests for issue #12
 - prints a "still to build" list at the end: what's missing, and how many tests wait for it
 - provides fixtures: ready-made things a test can ask for by naming them as a parameter
+
+The database tests need PostgreSQL running (docker compose up -d). Each test gets its own empty
+schema in it, which is deleted afterwards, so tests never touch your real data.
 """
 
+import os
 import re
-import sqlite3
+import uuid
 from collections import Counter
 
+import psycopg
 import pytest
+from psycopg.conninfo import make_conninfo
 
 from helpers import NOT_BUILT_YET, make_project, need, need_file
+
+# The server the tests use: SAFESHELF_TEST_DATABASE_URL, or the one docker-compose.yml starts.
+TEST_DATABASE_URL = os.environ.get(
+    "SAFESHELF_TEST_DATABASE_URL", "postgresql://safeshelf:safeshelf@localhost:5432/safeshelf"
+)
+_unreachable = []  # set once, so a stopped server gives one quick message per test, not a wait
 
 LAYERS = ("unit", "acceptance", "e2e")
 _issues_of_test = {}
@@ -76,32 +88,55 @@ def pytest_terminal_summary(terminalreporter):
 # Fixtures
 # --------------------------------------------------------------------------------------------
 @pytest.fixture
-def project(tmp_path):
-    """A throw-away project folder with the test reference data and an empty incoming folder.
+def database(monkeypatch):
+    """A new, empty schema in the test PostgreSQL server, deleted after the test.
 
-    Tests never touch your real data/ folder: everything happens in a temporary copy.
+    SAFESHELF_DATABASE_URL points at it during the test, so the project's code (and any command
+    the test runs) uses it too. Returns that URL.
+    """
+    if _unreachable:
+        pytest.fail(_unreachable[0], pytrace=False)
+    schema = f"test_{uuid.uuid4().hex[:12]}"
+    try:
+        admin = psycopg.connect(TEST_DATABASE_URL, autocommit=True, connect_timeout=3)
+    except psycopg.OperationalError as error:
+        _unreachable.append(f"Can't connect to PostgreSQL. Start it with: docker compose up -d\n{error}")
+        pytest.fail(_unreachable[0], pytrace=False)
+    admin.execute(f"CREATE SCHEMA {schema}")
+    url = make_conninfo(TEST_DATABASE_URL, options=f"-c search_path={schema}")
+    monkeypatch.setenv("SAFESHELF_DATABASE_URL", url)
+    yield url
+    admin.execute(f"DROP SCHEMA {schema} CASCADE")
+    admin.close()
+
+
+@pytest.fixture
+def project(tmp_path, database):
+    """A throw-away project folder with the test reference data and an empty incoming folder,
+    and an empty database schema of its own.
+
+    Tests never touch your real data/ folder or database: everything happens in a temporary copy.
     """
     return make_project(tmp_path / "project")
 
 
 @pytest.fixture
-def schema_db():
-    """An empty in-memory database, built straight from sql/schema.sql (no Python needed)."""
+def schema_db(database):
+    """An empty database built straight from sql/schema.sql (no Python project code needed)."""
     schema = need_file("sql/schema.sql", issue=4)
-    conn = sqlite3.connect(":memory:")
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.executescript(schema.read_text(encoding="utf-8"))
+    conn = psycopg.connect(database, autocommit=True)
+    conn.execute(schema.read_text(encoding="utf-8"))
     yield conn
     conn.close()
 
 
 @pytest.fixture
 def reference_db(project):
-    """The project's database file, with the schema and the test reference data loaded."""
+    """The project's database, with the schema and the test reference data loaded."""
     connect = need("safeshelf.db", "connect", issue=4)
     create_schema = need("safeshelf.db", "create_schema", issue=4)
     load_reference_data = need("safeshelf.db", "load_reference_data", issue=5)
-    conn = connect(project / "data" / "safeshelf.db")
+    conn = connect()
     create_schema(conn)
     load_reference_data(conn, project / "data" / "reference")
     yield conn

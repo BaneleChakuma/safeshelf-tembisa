@@ -22,15 +22,17 @@ SafeShelf handles information about people (committee members and drivers) and s
 
 ## Who can see what
 
-SQLite doesn't have user accounts, so in this project the "roles" are **SQL views and separate report files**. Each view (in `sql/schema.sql`) leaves out what its audience may not see, and each report is built from the view of the people who read it ([reports](REPORTS.md)). A real system would use a database with user permissions (for example, PostgreSQL roles). That's a stretch goal.
+Each audience has a **PostgreSQL role** and a **view** (both in `sql/schema.sql`). The view leaves out what that audience may not see, and the role can read its own view and nothing else: no table, and no other audience's view. Every report runs as the role of the people who read it ([reports](REPORTS.md)), so even a mistake in a report's query can't show them something they may not see, because PostgreSQL refuses it (`permission denied`). Police alerts also go to their own report folder.
 
-| Role | Database view | Can see | Cannot see |
-|---|---|---|---|
-| Community | `community_view` | One row per finding: store, section, date, and whether it's a shelf problem, a near-expiry delivery or a verified report | Truck data, names, report text, unverified reports |
-| Committee | `committee_view` | Shelf checks (with the member's ID), delivered items and community reports with their text | Truck locations, vehicle registrations |
-| Store | `store_view` | Shelf checks and deliveries; a store reads its own rows with `WHERE store_id = ...` | Who did a check, photos, report text, truck locations |
-| Police | `police_view` | Trips with the vehicle registration and every location update | Community report text |
-| Data engineer | All tables (admin) | Everything, to run the pipeline | Nothing is hidden |
+| Audience | Database role | Can read | Can see | Cannot see |
+|---|---|---|---|---|
+| Community | `safeshelf_community` | `community_view` | One row per finding: store, section, date, and whether it's a shelf problem, a near-expiry delivery or a verified report | Truck data, names, report text, unverified reports |
+| Committee | `safeshelf_committee` | `committee_view` | Shelf checks (with the member's ID), delivered items and community reports with their text | Truck locations, vehicle registrations |
+| Store | `safeshelf_store` | `store_view` | Shelf checks and deliveries; a store reads its own rows with `WHERE store_id = ...` | Who did a check, photos, report text, truck locations |
+| Police | `safeshelf_police` | `police_view`, and when deliveries happened (`deliveries.trip_id` and `delivered_at` only) | Trips with the vehicle registration and every location update | Community report text, anything else about deliveries |
+| Data engineer | the database's owner (`safeshelf`) | All tables | Everything, to run the pipeline | Nothing is hidden |
+
+Every role can also read `stores`, `suppliers` and `products`: business details everyone may see. The roles are groups that can't log in. A person gets a login of their own in one of them, for example `CREATE USER thandi PASSWORD '...' IN ROLE safeshelf_committee;`.
 
 ## How the code applies these rules
 
@@ -40,12 +42,13 @@ SQLite doesn't have user accounts, so in this project the "roles" are **SQL view
 | Phone numbers and ID numbers typed into a community report are replaced with `[removed]`, in the database and in `data/rejected/` | `privacy.py` (`redact_personal_info`), `pipeline.py` |
 | Committee members are stored by ID, initials and section only, never by name | `sql/schema.sql`, `data/reference/committee_members.csv` |
 | Truck locations are only stored in `trip_events`, and only `police_view` shows them | `sql/schema.sql` |
+| Each audience's role can read only its own view; every report runs as its audience's role | `sql/schema.sql` (roles), `reports.py` (`AUDIENCE`) |
 | Locations older than `LOCATION_RETENTION_DAYS` (30) are removed on every run; the update stays, without its location | `privacy.py` (`apply_retention`), `settings.py` |
 | Rejected truck updates lose their location after 30 days too, on every run. A rejected row's time is often what's wrong with it, so its age comes from the file's date | `privacy.py` (`apply_retention_to_rejected`) |
 | The daily report has no truck data and no names; police alerts go to their own folder, `reports/police/` | `reports.py` |
 | The scoreboard counts verified findings only | `community_view`, `sql/reports/store_scoreboard.sql` |
 
-Tests check every one of these rules (`tests/acceptance/test_story_21_role_views.py`, `test_story_22_privacy.py` and others).
+Tests check every one of these rules (`tests/acceptance/test_story_21_role_views.py`, `test_story_22_privacy.py`, `test_story_29_postgres_roles.py` and others).
 
 ## Data lifecycle
 
@@ -53,7 +56,7 @@ Tests check every one of these rules (`tests/acceptance/test_story_21_role_views
 |---|---|
 | **Acquisition** | Collect only the fields in the templates (`data/templates/`). Reports are anonymous. Committee members and drivers are told what's collected and why, and agree to it |
 | **Processing** | Clean and validate; keep rejected records separate with reasons, and with the same privacy rules (no phone or ID numbers, locations removed after 30 days); never guess missing values |
-| **Storage** | One database file, which is never committed to GitHub. Locations live only in `trip_events` |
+| **Storage** | A PostgreSQL database in Docker, which only this computer can connect to; its data is never committed to GitHub. Locations live only in `trip_events` |
 | **Sharing** | The community gets the scoreboard only, and the police get trip alerts only. Nothing is shared with third parties |
 | **Retention and disposal** | Locations are removed after 30 days on every run, from the database and from rejected files. Other records are kept for 1 year; that clean-up isn't automated yet |
 

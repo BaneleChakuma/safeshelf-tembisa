@@ -1,10 +1,11 @@
 """The pipeline: simulate -> extract -> clean -> validate -> load -> report. Issues #11 to #14 and #23."""
 
 import csv
-import sqlite3
 import sys
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
+
+import psycopg
 
 from safeshelf import db, reports, simulate
 from safeshelf.clean import clean_row, load_aliases
@@ -28,7 +29,7 @@ def run_pipeline(root: str | Path, today: date, days: int | None = None, seed: i
     if days is not None:
         simulate.generate(root, days=days, seed=seed, start=today - timedelta(days=days - 1))
 
-    conn = db.connect(root / "data" / "safeshelf.db")
+    conn = db.connect()
     try:
         db.create_schema(conn)
         db.load_reference_data(conn, root / "data" / "reference")
@@ -46,7 +47,7 @@ def run_pipeline(root: str | Path, today: date, days: int | None = None, seed: i
     return summary
 
 
-def process_incoming(conn: sqlite3.Connection, root: str | Path, today: date) -> dict[str, int]:
+def process_incoming(conn: psycopg.Connection, root: str | Path, today: date) -> dict[str, int]:
     """Load every file in <root>/data/incoming that hasn't been processed yet.
 
     Bad rows go to <root>/data/rejected/<file>_rejected.csv with the reason. Each file is
@@ -64,7 +65,7 @@ def process_incoming(conn: sqlite3.Connection, root: str | Path, today: date) ->
     for path in find_new_files(root / "data" / "incoming", processed):
         try:
             rows_read, rows_loaded, rows_rejected = process_file(conn, path, root, aliases, today)
-        except (OSError, sqlite3.Error, ValueError) as error:
+        except (OSError, psycopg.Error, ValueError) as error:
             print(f"{path.name}: failed, will try again next run: {error}", file=sys.stderr)
             summary["files_failed"] += 1
             continue
@@ -76,7 +77,7 @@ def process_incoming(conn: sqlite3.Connection, root: str | Path, today: date) ->
     return summary
 
 
-def process_file(conn: sqlite3.Connection, path: Path, root: Path, aliases: dict, today: date) -> tuple[int, int, int]:
+def process_file(conn: psycopg.Connection, path: Path, root: Path, aliases: dict, today: date) -> tuple[int, int, int]:
     """Clean, validate and load one file. Returns (rows read, rows loaded, rows rejected)."""
     file_type, _ = parse_file_name(path)
     raw_rows = read_rows(path)
@@ -108,12 +109,12 @@ def process_file(conn: sqlite3.Connection, path: Path, root: Path, aliases: dict
         write_rejected(root / "data" / "rejected" / f"{path.stem}_rejected.csv", file_type, rejected)
     # The rows and the pipeline_runs record are saved in one transaction: both or neither. If the
     # rows were saved without the record, the next run would load the file again.
-    with conn:
+    with conn.transaction():
         rows_loaded = insert_rows(conn, file_type, good)
         conn.execute(
             "INSERT INTO pipeline_runs (file_name, processed_at, rows_read, rows_loaded, rows_rejected)"
-            " VALUES (?, ?, ?, ?, ?)",
-            (path.name, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(raw_rows), rows_loaded, len(rejected)),
+            " VALUES (%s, %s, %s, %s, %s)",
+            (path.name, datetime.now().replace(microsecond=0), len(raw_rows), rows_loaded, len(rejected)),
         )
     return len(raw_rows), rows_loaded, len(rejected)
 

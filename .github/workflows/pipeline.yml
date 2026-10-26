@@ -4,7 +4,8 @@
 #   daily-report   every morning (and from the Actions tab: "Run workflow"): runs the pipeline on
 #                  30 days of simulated data and uploads the daily report
 #
-# See the results in the Actions tab.
+# Both jobs get their own PostgreSQL server (#29), like the one docker-compose.yml starts, so the
+# pipeline and the tests find it at its usual address. See the results in the Actions tab.
 
 name: Pipeline
 
@@ -18,6 +19,20 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: safeshelf
+          POSTGRES_USER: safeshelf
+          POSTGRES_PASSWORD: safeshelf
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U safeshelf -d safeshelf"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     strategy:
       matrix:
         # The oldest Python the README supports, and a newer one.
@@ -36,6 +51,20 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     needs: tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: safeshelf
+          POSTGRES_USER: safeshelf
+          POSTGRES_PASSWORD: safeshelf
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U safeshelf -d safeshelf"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     env:
       TZ: Africa/Johannesburg  # so "today" and the police report's "now" are Tembisa's time
     steps:
@@ -43,7 +72,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      # The pipeline only uses Python's standard library, so there's nothing to install.
+          cache: pip
+      - run: pip install -r requirements.txt
       - run: python -m safeshelf run --days 30
         env:
           PYTHONPATH: src

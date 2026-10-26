@@ -2,9 +2,10 @@
 
 import csv
 import re
-import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
+
+import psycopg
 
 from safeshelf.extract import parse_file_name
 from safeshelf.settings import LOCATION_RETENTION_DAYS
@@ -25,20 +26,19 @@ def redact_personal_info(text: str) -> str:
     return PHONE_NUMBER.sub("[removed]", text)
 
 
-def apply_retention(conn: sqlite3.Connection, today: date, location_days: int | None = None) -> int:
+def apply_retention(conn: psycopg.Connection, today: date, location_days: int | None = None) -> int:
     """Remove the location from truck updates older than the retention period.
 
     The update itself is kept (with no latitude or longitude), so the trip's history still
     makes sense. Returns how many updates lost their location.
     """
     days = LOCATION_RETENTION_DAYS if location_days is None else location_days
-    cutoff = f"{today - timedelta(days=days)} 00:00:00"
-    with conn:
-        cursor = conn.execute(
-            "UPDATE trip_events SET latitude = NULL, longitude = NULL"
-            " WHERE event_time < ? AND (latitude IS NOT NULL OR longitude IS NOT NULL)",
-            (cutoff,),
-        )
+    cutoff = today - timedelta(days=days)  # midnight at the start of that day
+    cursor = conn.execute(
+        "UPDATE trip_events SET latitude = NULL, longitude = NULL"
+        " WHERE event_time < %s AND (latitude IS NOT NULL OR longitude IS NOT NULL)",
+        (cutoff,),
+    )
     return cursor.rowcount
 
 

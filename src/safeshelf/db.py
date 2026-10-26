@@ -1,10 +1,11 @@
-"""The SQLite database: connecting, building the tables and loading the reference data."""
+"""The PostgreSQL database: connecting, building the tables and loading the reference data."""
 
 import csv
-import sqlite3
 from pathlib import Path
 
-from safeshelf.settings import SQL_DIR
+import psycopg
+
+from safeshelf.settings import SQL_DIR, database_url
 
 # The reference tables and their CSV columns, in loading order (vehicles point to suppliers).
 REFERENCE_TABLES = {
@@ -17,27 +18,45 @@ REFERENCE_TABLES = {
 WHOLE_NUMBER_COLUMNS = {"shelf_life_days", "is_essential", "needs_cold_storage"}
 
 
-def connect(path: str | Path) -> sqlite3.Connection:
-    """Open the database. SQLite only checks foreign keys when a connection asks it to."""
-    conn = sqlite3.connect(path)
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+# Every table, so rebuild can start again (the views go with them).
+TABLES = ["pipeline_runs", "community_reports", "shelf_checks", "delivery_items", "deliveries", "trip_events",
+          "trips", "vehicles", "committee_members", "products", "suppliers", "stores"]
 
 
-def create_schema(conn: sqlite3.Connection) -> None:
-    """Create the tables and views in sql/schema.sql. Safe to run on an existing database."""
-    conn.executescript((SQL_DIR / "schema.sql").read_text(encoding="utf-8"))
+def connect(url: str | None = None) -> psycopg.Connection:
+    """Open the database (settings.database_url() unless a URL is given).
+
+    Each statement is saved straight away (autocommit). Steps that must happen together use
+    `with conn.transaction():`, which saves them all or none. (Not `with conn:`, which closes
+    a psycopg connection.)
+    """
+    try:
+        return psycopg.connect(url or database_url(), autocommit=True)
+    except psycopg.OperationalError as error:
+        raise psycopg.OperationalError(
+            f"can't connect to the database. Is it running? Start it with: docker compose up -d\n{error}"
+        ) from error
 
 
-def load_reference_data(conn: sqlite3.Connection, folder: str | Path) -> None:
+def create_schema(conn: psycopg.Connection) -> None:
+    """Create the tables, views and roles in sql/schema.sql. Safe to run on an existing database."""
+    conn.execute((SQL_DIR / "schema.sql").read_text(encoding="utf-8"))
+
+
+def drop_everything(conn: psycopg.Connection) -> None:
+    """Delete every SafeShelf table and view, to load everything again (`rebuild`)."""
+    conn.execute(f"DROP TABLE IF EXISTS {', '.join(TABLES)} CASCADE")
+
+
+def load_reference_data(conn: psycopg.Connection, folder: str | Path) -> None:
     """Load stores, suppliers, products, committee members and vehicles from CSV files.
 
     The pipeline does this on every run. INSERT ... ON CONFLICT DO UPDATE adds new rows and
-    updates changed ones. (INSERT OR REPLACE would delete the old row first, which breaks the
-    deliveries and checks that point to it.)
+    updates changed ones, without deleting the old row first (which would break the deliveries
+    and checks that point to it).
     """
     folder = Path(folder)
-    with conn:  # one transaction for all the reference files
+    with conn.transaction():  # one transaction for all the reference files
         for table, columns in REFERENCE_TABLES.items():
             path = folder / f"{table}.csv"
             if not path.exists():
@@ -47,17 +66,17 @@ def load_reference_data(conn: sqlite3.Connection, folder: str | Path) -> None:
 
             key, others = columns[0], columns[1:]
             sql = (
-                f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join('?' for _ in columns)})"
+                f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join('%s' for _ in columns)})"
                 f" ON CONFLICT ({key}) DO UPDATE SET {', '.join(f'{c} = excluded.{c}' for c in others)}"
             )
             values = [
                 [int(row[column]) if column in WHOLE_NUMBER_COLUMNS else row[column].strip() for column in columns]
                 for row in rows
             ]
-            conn.executemany(sql, values)
+            conn.cursor().executemany(sql, values)
 
 
-def known_ids(conn: sqlite3.Connection) -> dict[str, set[str]]:
+def known_ids(conn: psycopg.Connection) -> dict[str, set[str]]:
     """The IDs already in the database, which validation checks every row against."""
 
     def ids(sql):
@@ -74,9 +93,8 @@ def known_ids(conn: sqlite3.Connection) -> dict[str, set[str]]:
     }
 
 
-def verify_report(conn: sqlite3.Connection, report_id: int) -> None:
+def verify_report(conn: psycopg.Connection, report_id: int) -> None:
     """A committee member has checked a community report: mark it as verified."""
-    with conn:
-        cursor = conn.execute("UPDATE community_reports SET verified = 1 WHERE report_id = ?", (report_id,))
+    cursor = conn.execute("UPDATE community_reports SET verified = 1 WHERE report_id = %s", (report_id,))
     if cursor.rowcount == 0:
         raise ValueError(f"there is no community report with ID {report_id}")
