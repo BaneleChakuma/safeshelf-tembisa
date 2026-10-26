@@ -1,0 +1,27 @@
+# SafeShelf on GitHub Actions. Issue #25.
+#
+#   tests   on every push and pull request: python -m pytest
+#
+# See the results in the Actions tab.
+
+name: Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The oldest Python the README supports, and a newer one.
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest
