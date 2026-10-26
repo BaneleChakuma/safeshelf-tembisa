@@ -39,6 +39,8 @@ def read_rows():
         ("trips_2026-11-02.csv", ("trips", date(2026, 11, 2))),
         ("delivery_items_2026-10-31.csv", ("delivery_items", date(2026, 10, 31))),
         ("trip_events_2026-12-01.csv", ("trip_events", date(2026, 12, 1))),
+        ("shelf_checks_2026-11-02_form.csv", ("shelf_checks", date(2026, 11, 2))),  # from the Google Form (#28)
+        ("shelf_checks_2026-11-02_form2.csv", ("shelf_checks", date(2026, 11, 2))),
     ],
 )
 def test_a_file_name_gives_the_type_and_the_day(parse_file_name, name, expected):
@@ -54,6 +56,9 @@ def test_a_file_name_gives_the_type_and_the_day(parse_file_name, name, expected)
         "shelf_checks_02-11-2026.csv",
         "groceries_2026-11-02.csv",
         "shelf_checks_2026-11-02.xlsx",
+        "shelf_checks_2026-11-02_.csv",
+        "shelf_checks_2026-11-02_Form.csv",
+        "shelf_checks_2026-11-02_rejected.csv",
     ],
 )
 def test_other_file_names_are_not_incoming_files(parse_file_name, name):

@@ -168,6 +168,8 @@ text version, for example `as_of.isoformat()`. Reports return a list of dicts.
 | `privacy.py` | `redact_personal_info(text)` | #22 | Phone and ID numbers become `[removed]` |
 | | `apply_retention(conn, today, location_days=None)` | #22 | Removes locations older than the setting (deleting the rows or setting them to NULL both work) |
 | | `apply_retention_to_rejected(folder, today, location_days=None)` | #22 | Does the same for rejected truck updates, by the file's date; returns how many rows lost their location |
+| `forms.py` | `import_form_responses(export_path, root, today)` | #28 | Reads a Google Form export (the CSV file, or Google's zip with it inside; columns found by the first line of each question's title) and copies its new responses to `data/incoming/shelf_checks_<today>_form.csv` (then `_form2` ...); returns `file`, `new`, `already_imported` and `dropped` |
+| | `form_timestamp(text)`, `store_id(text)` | #28 | A Form's Timestamp as `YYYY-MM-DD HH:MM:SS` in South African time (any `GMT±H` offset converted); `ST01` from the dropdown's `ST01 Amandla Superette` |
 | `settings.py` | `EXPIRING_SOON_DAYS = 2`, `NEAR_EXPIRY_THRESHOLD = 0.5`, `SCOREBOARD_DAYS = 30`, `LATE_MINUTES = 30`, `UNEXPECTED_STOP_MINUTES = 10`, `LOCATION_RETENTION_DAYS = 30` | #16 to #22 | The defaults the functions use when an argument is `None` |
 
 The docstring at the top of each test file explains its functions in more detail.
@@ -250,14 +252,16 @@ tests/
     test_load.py           #14  inserting, data types, all-or-nothing
     test_privacy.py        #22  phone and ID numbers, location retention (database and rejected files)
     test_simulate.py       #6   the simulator's files
+    test_forms.py          #28  reading a Google Form's timestamps and store dropdown
   acceptance/
     conftest.py            the process_incoming and world_db fixtures
-    test_story_05_reference_data.py ... test_story_23_one_command.py   one file per user story
+    test_story_05_reference_data.py ... test_story_28_google_forms.py  one file per user story
     test_story_27_dashboard.py       #27  the dashboard's data, and the page run without a browser
     test_story_29_postgres_roles.py  #29  each audience's role reads only its own view
   e2e/
     test_e2e_simulate_command.py     python -m safeshelf.simulate
     test_e2e_run_command.py          python -m safeshelf run / rebuild
+    test_e2e_import_form_command.py  python -m safeshelf import-form
     test_e2e_dashboard_command.py    python -m safeshelf dashboard
 ```
 

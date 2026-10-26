@@ -183,6 +183,20 @@ PYTHONPATH=src python -m safeshelf.simulate --days 30 --seed 42
 The same seed always produces the same files. `--start YYYY-MM-DD` picks the first simulated
 day (default: ending today); `--root FOLDER` points it at a different project folder.
 
+## Shelf checks from a phone
+
+Committee members can also send shelf checks from their phone with a Google Form. Download the
+Form's responses as a CSV file and import them, then run the pipeline as usual:
+
+```bash
+PYTHONPATH=src python -m safeshelf import-form ~/Downloads/"SafeShelf shelf check.csv.zip"
+PYTHONPATH=src python -m safeshelf run
+```
+
+The import reads Google's zip file as it is, turns every time into South African time, only copies
+responses it hasn't imported before, and never copies email addresses.
+How to set up the Form, question by question, is in [GOOGLE_FORM.md](docs/GOOGLE_FORM.md).
+
 ## Community dashboard
 
 Residents can see the store scoreboard and this week's verified problems on a web page, instead
@@ -287,6 +301,7 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · G
 | [Data governance](docs/DATA_GOVERNANCE.md) | Privacy (POPIA): who can see what, and for how long |
 | [Testing](docs/TESTING.md) | How to run the tests, and what each one expects from the code |
 | [Demo](docs/DEMO.md) | The 5-minute demo: outline, what to show, and likely questions |
+| [Google Form](docs/GOOGLE_FORM.md) | Setting up the Form for shelf checks from a phone, and importing its responses |
 
 ## What I learned
 
