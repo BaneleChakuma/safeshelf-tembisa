@@ -103,3 +103,6 @@ PY
 
 echo
 echo "Done. Everything from this run is in $DEMO"
+echo
+echo "To show this run on the community dashboard, in another terminal:"
+echo "  SAFESHELF_DATABASE_URL=\"$SAFESHELF_DATABASE_URL\" PYTHONPATH=src python -m safeshelf dashboard"

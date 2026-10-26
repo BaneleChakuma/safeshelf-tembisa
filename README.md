@@ -196,6 +196,24 @@ PYTHONPATH=src python -m safeshelf run
 The import only copies responses it hasn't imported before, and never copies email addresses.
 How to set up the Form, question by question, is in [GOOGLE_FORM.md](docs/GOOGLE_FORM.md).
 
+## Community dashboard
+
+Residents can see the store scoreboard and this week's verified problems on a web page, instead
+of reading report files. Start it with one command:
+
+```bash
+PYTHONPATH=src python -m safeshelf dashboard
+```
+
+It opens in your browser at http://localhost:8501 (press Ctrl+C in the terminal to stop it). It
+shows the latest day with data, and you can pick another day on the left. Run the pipeline first,
+so there's something to show.
+
+The dashboard connects as the community's database role, so it can only read `community_view`
+and the public store list. PostgreSQL refuses anything else: no truck data, no names and no
+report text, even if the page had a mistake in it. `--port` picks another port, and `--no-browser`
+starts it without opening a browser.
+
 ## Sample report
 
 This is part of the daily report from `run --days 30 --seed 42 --today 2026-10-26` (the full
@@ -254,7 +272,7 @@ The full daily report from the sample run above, as it looks in a Markdown previ
 
 ## Tech stack
 
-Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · pytest · GitHub Actions · GitHub Projects
+Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · GitHub Actions · GitHub Projects
 
 ## Project structure
 
@@ -303,9 +321,8 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · pytest · GitHub Actions
 
 ## Next steps
 
-- **A community dashboard** (Streamlit) so residents can see the scoreboard without opening a file ([#27](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/27))
 - **Shelf checks captured on a phone** with Google Forms, instead of CSV files ([#28](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/28))
-- **MySQL or PostgreSQL in Docker**, so more than one person can use the database at once ([#29](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/29))
+- **Putting the dashboard online**, so residents can open it on their phones, not only on this computer
 - **Real data**: a pilot with one committee and one store, to see how the rules and scores hold up
 
 ## About the data

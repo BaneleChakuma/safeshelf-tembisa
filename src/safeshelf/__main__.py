@@ -3,9 +3,11 @@
     python -m safeshelf run [--days N] [--seed S] [--today YYYY-MM-DD] [--root FOLDER]
     python -m safeshelf rebuild [--today YYYY-MM-DD] [--root FOLDER]
     python -m safeshelf import-form EXPORT.csv [--today YYYY-MM-DD] [--root FOLDER]   (#28)
+    python -m safeshelf dashboard [--port PORT] [--no-browser]   (#27)
 """
 
 import argparse
+import os
 import sys
 from datetime import date
 from pathlib import Path
@@ -38,10 +40,16 @@ def main(argv: list[str] | None = None) -> int:
     form = commands.add_parser("import-form", parents=[common],
                                help="copy the new responses from a Google Form export into data/incoming")
     form.add_argument("export", type=Path, help="the Form's responses, downloaded as a CSV file")
+    dashboard = commands.add_parser("dashboard", help="open the community dashboard in your browser")
+    dashboard.add_argument("--port", type=int, default=8501, help="the web page's port (default: 8501)")
+    dashboard.add_argument("--no-browser", action="store_true", help="start it without opening a browser")
     args = parser.parse_args(argv)
 
     if args.command == "import-form":
         return import_form(args)
+
+    if args.command == "dashboard":
+        return run_dashboard(args.port, open_browser=not args.no_browser)
 
     try:
         if args.command == "rebuild":
@@ -83,6 +91,23 @@ def import_form(args: argparse.Namespace) -> int:
     if result["file"]:
         print(f"Written to {result['file']}. Run `python -m safeshelf run` to load them.")
     return 0
+
+
+def run_dashboard(port: int, open_browser: bool) -> int:
+    """Start the Streamlit page (dashboard_app.py). It runs until it's stopped with Ctrl+C.
+
+    This process becomes Streamlit (os.execve), so stopping it stops the web server too, instead
+    of leaving it running in the background.
+    """
+    app = Path(__file__).with_name("dashboard_app.py")
+    env = dict(os.environ)
+    src = str(app.parent.parent)  # so the page can `import safeshelf`
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, [src, env.get("PYTHONPATH")]))
+    print(f"The dashboard is at http://localhost:{port} (press Ctrl+C to stop it)", flush=True)
+    command = [sys.executable, "-m", "streamlit", "run", str(app), "--server.port", str(port),
+               "--server.headless", "false" if open_browser else "true", "--browser.gatherUsageStats", "false"]
+    os.execve(sys.executable, command, env)
+    return 0  # never reached: Streamlit has taken over this process
 
 
 if __name__ == "__main__":
