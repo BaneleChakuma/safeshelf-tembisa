@@ -7,6 +7,7 @@ process_incoming(conn, root, today) loads every new file in <root>/data/incoming
 summary dict with files_processed, rows_read, rows_loaded and rows_rejected.
 """
 
+import sqlite3
 from datetime import timedelta
 
 import pytest
@@ -77,3 +78,18 @@ def test_a_new_file_is_picked_up_on_the_next_run(project, reference_db, process_
         "shelf_checks_2026-11-01.csv",
         "shelf_checks_2026-11-02.csv",
     ]
+
+
+def test_rows_are_not_kept_if_the_file_cannot_be_recorded(project, reference_db, process_incoming):
+    """The rows and the pipeline_runs record are saved together. If the rows were kept without
+    the record (say the pipeline crashed in between), the next run would load the file again."""
+    write_incoming(project, "shelf_checks", TODAY, [shelf_check_row()])
+    reference_db.execute(
+        "CREATE TRIGGER fail_to_record BEFORE INSERT ON pipeline_runs"
+        " BEGIN SELECT RAISE(ABORT, 'could not record the file'); END"
+    )
+
+    with pytest.raises(sqlite3.Error):
+        process_incoming(reference_db, project, TODAY)
+
+    assert count_rows(reference_db, "shelf_checks") == 0

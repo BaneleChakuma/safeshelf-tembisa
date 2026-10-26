@@ -8,7 +8,7 @@ from pathlib import Path
 from safeshelf import db, reports, simulate
 from safeshelf.clean import clean_row, load_aliases
 from safeshelf.extract import COLUMNS, find_new_files, parse_file_name, read_rows
-from safeshelf.load import load_rows
+from safeshelf.load import insert_rows
 from safeshelf.privacy import apply_retention
 from safeshelf.validate import validate_row
 
@@ -89,10 +89,12 @@ def process_file(conn: sqlite3.Connection, path: Path, root: Path, aliases: dict
         elif file_type == "deliveries":
             known["deliveries"].add(row["delivery_id"])
 
-    rows_loaded = load_rows(conn, file_type, good)
     if rejected:
         write_rejected(root / "data" / "rejected" / f"{path.stem}_rejected.csv", file_type, rejected)
+    # The rows and the pipeline_runs record are saved in one transaction: both or neither. If the
+    # rows were saved without the record, the next run would load the file again.
     with conn:
+        rows_loaded = insert_rows(conn, file_type, good)
         conn.execute(
             "INSERT INTO pipeline_runs (file_name, processed_at, rows_read, rows_loaded, rows_rejected)"
             " VALUES (?, ?, ?, ?, ?)",
