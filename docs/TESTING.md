@@ -93,7 +93,7 @@ differently, change the test as well and say why in your pull request. The colum
 | `data/reference/` | `stores.csv`, `suppliers.csv`, `products.csv`, `product_aliases.csv`, `committee_members.csv`, `vehicles.csv` |
 | `data/templates/` | One empty CSV file per incoming type, plus `README.md` describing every column |
 | `data/incoming/` | New files waiting to be loaded |
-| `data/rejected/` | `<file name without .csv>_rejected.csv`: the bad rows, with their original values and a `reason` column |
+| `data/rejected/` | `<file name without .csv>_rejected.csv`: the bad rows, with their original values and a `reason` column (phone and ID numbers removed, and truck locations after 30 days) |
 | `data/safeshelf.db` | The database |
 | `reports/` | `daily_YYYY-MM-DD.md`, a CSV file per table (`daily_YYYY-MM-DD_<table>.csv`) and `police/` |
 
@@ -156,6 +156,7 @@ text version, for example `as_of.isoformat()`. Reports return a list of dicts.
 | | `write_police_report(conn, reports_dir, now)` | #20 | Writes a file in `reports_dir/police/`, returns its path |
 | `privacy.py` | `redact_personal_info(text)` | #22 | Phone and ID numbers become `[removed]` |
 | | `apply_retention(conn, today, location_days=None)` | #22 | Removes locations older than the setting (deleting the rows or setting them to NULL both work) |
+| | `apply_retention_to_rejected(folder, today, location_days=None)` | #22 | Does the same for rejected truck updates, by the file's date; returns how many rows lost their location |
 | `settings.py` | `EXPIRING_SOON_DAYS = 2`, `NEAR_EXPIRY_THRESHOLD = 0.5`, `SCOREBOARD_DAYS = 30`, `LATE_MINUTES = 30`, `UNEXPECTED_STOP_MINUTES = 10`, `LOCATION_RETENTION_DAYS = 30` | #16 to #22 | The defaults the functions use when an argument is `None` |
 
 The docstring at the top of each test file explains its functions in more detail.
@@ -236,7 +237,7 @@ tests/
     test_validate.py       #12  every validation rule
     test_clean.py          #13  every cleaning step
     test_load.py           #14  inserting, data types, all-or-nothing
-    test_privacy.py        #22  phone and ID numbers, location retention
+    test_privacy.py        #22  phone and ID numbers, location retention (database and rejected files)
     test_simulate.py       #6   the simulator's files
   acceptance/
     conftest.py            the process_incoming and world_db fixtures
