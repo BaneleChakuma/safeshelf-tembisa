@@ -168,6 +168,21 @@ A store with no shelf checks has no score (—) and comes last: nobody has looke
 called safe. How the score is worked out is in [REPORTS.md](docs/REPORTS.md). The police report
 goes to `reports/police/` and isn't shown here.
 
+## Screenshots
+
+The project board: every user story and task is an issue, and each card moves from *Todo* to
+*Done* through *In Progress* and *Testing*.
+
+![The SafeShelf Tembisa project board on GitHub](docs/images/board.png)
+
+The full daily report from the sample run above, as it looks in a Markdown preview:
+
+![Daily report: summary and expired or spoiled food on shelves](docs/images/report-expired.png)
+
+![Daily report: essentials about to expire](docs/images/report-essentials.png)
+
+![Daily report: suppliers delivering near-expiry stock, and the store scoreboard](docs/images/report-scoreboard.png)
+
 ## Who it's for
 
 | User | What SafeShelf gives them |
