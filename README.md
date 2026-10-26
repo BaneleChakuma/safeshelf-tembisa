@@ -27,17 +27,45 @@ A data pipeline checks and cleans this data, loads it into a SQL database and pr
 - a store scoreboard
 - a separate police-only report of delayed trucks and unexpected stops
 
+## Architecture
+
 ```mermaid
 flowchart LR
-    A["Deliveries"] --> P["Pipeline: extract, validate, clean, load"]
-    B["Shelf checks"] --> P
-    C["Community reports"] --> P
-    D["Truck trip updates"] --> P
-    P --> DB[("SQLite database")]
-    DB --> R1["Daily community report"]
-    DB --> R2["Store report"]
-    DB --> R3["Police report"]
+    subgraph Sources["Daily CSV files (simulated)"]
+        A["Deliveries"]
+        B["Shelf checks"]
+        C["Community reports"]
+        D["Truck trip updates"]
+    end
+    Sources --> E["Extract<br/>new files only"]
+    E --> F["Clean<br/>names, dates, product aliases,<br/>phone numbers removed"]
+    F --> G["Validate<br/>data quality rules"]
+    G -- "bad rows, with the reason" --> R["data/rejected/"]
+    G --> L["Load<br/>one transaction per file"]
+    L --> DB[("SQLite<br/>+ pipeline_runs")]
+    DB --> V1["committee_view"]
+    DB --> V2["store_view"]
+    DB --> V3["community_view"]
+    DB --> V4["police_view"]
+    V1 --> DR["Daily report<br/>reports/"]
+    V2 --> DR
+    V3 --> DR
+    V4 --> PR["Police report<br/>reports/police/"]
 ```
+
+- **Extract** picks up only files that aren't in the `pipeline_runs` table yet, so running it
+  twice never loads anything twice.
+- **Clean** writes every value the same way: dates as `YYYY-MM-DD`, product aliases like
+  "BREAD WHITE" become one product ID. It also removes phone and ID numbers from community reports.
+- **Validate** checks each row against the [data quality rules](docs/PLAN.md#data-quality-rules).
+  Bad rows go to `data/rejected/` with the reason, so they can be fixed and sent again.
+- **Load** saves a file's rows and its `pipeline_runs` record in one transaction, so either both
+  are saved or neither is.
+- **Report**: each report reads from a view made for its audience, so it can only use what that
+  audience may see. Truck locations exist only in `police_view`, and they're removed after 30 days.
+
+The tables, keys and relationships are in the **[ER diagram (docs/DATA_MODEL.md)](docs/DATA_MODEL.md)**,
+and who can see what is in [DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md).
 
 ## How to run
 
@@ -109,6 +137,52 @@ PYTHONPATH=src python -m safeshelf.simulate --days 30 --seed 42
 The same seed always produces the same files. `--start YYYY-MM-DD` picks the first simulated
 day (default: ending today); `--root FOLDER` points it at a different project folder.
 
+## Sample report
+
+This is part of the daily report from `run --days 30 --seed 42 --today 2026-10-26` (the full
+report also lists essentials about to expire and suppliers delivering near-expiry stock):
+
+| Checks done | Problems found | Rows rejected |
+| --- | --- | --- |
+| 15 | 6 | 5 |
+
+**Expired or spoiled food on shelves** (4 of the 6)
+
+| store | section | product | expiry_date | days_past_expiry | condition |
+| --- | --- | --- | --- | --- | --- |
+| Amandla Superette | Winnie Mandela | Potato Chips 125g | 2027-01-01 | 0 | SWOLLEN |
+| Ikhaya Spaza | Ebony Park | White Bread 700g | 2026-10-21 | 5 | OK |
+| Phumelela Supermarket | Mqantsa | Amasi 2L | 2026-10-21 | 5 | OK |
+| Siyakhula Groceries | Esangweni | Fresh Milk 1L | 2026-10-25 | 1 | EXPIRED |
+
+**Store scoreboard (last 30 days)** (first 3, and a store nobody has checked)
+
+| rank | store | checks_done | shelf_problems | verified_reports | near_expiry_items | score |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Thokoza Foods | 78 | 17 | 0 | 4 | 70 |
+| 2 | Masakhane Cash Store | 79 | 15 | 0 | 7 | 67 |
+| 3 | Siyakhula Groceries | 87 | 25 | 0 | 4 | 63 |
+| 7 | Ithemba Food Store | 0 | 0 | 0 | 1 | — |
+
+A store with no shelf checks has no score (—) and comes last: nobody has looked, so it can't be
+called safe. How the score is worked out is in [REPORTS.md](docs/REPORTS.md). The police report
+goes to `reports/police/` and isn't shown here.
+
+## Screenshots
+
+The project board: every user story and task is an issue, and each card moves from *Todo* to
+*Done* through *In Progress* and *Testing*.
+
+![The SafeShelf Tembisa project board on GitHub](docs/images/board.png)
+
+The full daily report from the sample run above, as it looks in a Markdown preview:
+
+![Daily report: summary and expired or spoiled food on shelves](docs/images/report-expired.png)
+
+![Daily report: essentials about to expire](docs/images/report-essentials.png)
+
+![Daily report: suppliers delivering near-expiry stock, and the store scoreboard](docs/images/report-scoreboard.png)
+
 ## Who it's for
 
 | User | What SafeShelf gives them |
@@ -136,6 +210,7 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | `src/safeshelf/` | The pipeline's Python package: extract, validate, clean, load, reports |
 | `tests/` | Unit, acceptance and end-to-end tests — see [the testing guide](docs/TESTING.md) |
 | `setup/` | One-off scripts for setting up the GitHub repo and project board |
+| `scripts/` | `demo.sh`, the live part of the demo |
 
 ## Project docs
 
@@ -146,6 +221,31 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | [Data model](docs/DATA_MODEL.md) | ER diagram, tables, keys and constraints |
 | [Data governance](docs/DATA_GOVERNANCE.md) | Privacy (POPIA): who can see what, and for how long |
 | [Testing](docs/TESTING.md) | How to run the tests, and what each one expects from the code |
+| [Demo](docs/DEMO.md) | The 5-minute demo: outline, what to show, and likely questions |
+
+## What I learned
+
+- **Run it twice, get the same result.** Recording every loaded file in `pipeline_runs` means a
+  second run loads nothing twice. That only holds if a file's rows and its record are saved in the
+  same transaction: when they were saved separately, a crash in between loaded the file again.
+- **One bad file shouldn't stop the others.** A file the database refuses is reported, counted and
+  tried again next time, while the rest still load.
+- **Privacy is easier in the database than in the reports.** Each report reads from a view made for
+  its audience, so a community report can't show a truck's location even by mistake.
+- **A fair score needs a rate, not a count.** The first scoreboard took 10 points off per problem,
+  so stores that were checked most often dropped to 0. Counting problems as a share of the checks
+  fixed that, and a store nobody has checked now has no score instead of a perfect one.
+- **Write the tests from the user stories first.** The acceptance tests came before the code, so
+  each story was done when its tests passed.
+- **Plan in small steps on a board.** Issues, milestones and a project board kept the work visible,
+  and I could move it on when the plan changed (Iterations 1-4 became one week).
+
+## Next steps
+
+- **A community dashboard** (Streamlit) so residents can see the scoreboard without opening a file ([#27](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/27))
+- **Shelf checks captured on a phone** with Google Forms, instead of CSV files ([#28](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/28))
+- **MySQL or PostgreSQL in Docker**, so more than one person can use the database at once ([#29](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/29))
+- **Real data**: a pilot with one committee and one store, to see how the rules and scores hold up
 
 ## About the data
 
