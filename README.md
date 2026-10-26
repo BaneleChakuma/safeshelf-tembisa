@@ -137,6 +137,37 @@ PYTHONPATH=src python -m safeshelf.simulate --days 30 --seed 42
 The same seed always produces the same files. `--start YYYY-MM-DD` picks the first simulated
 day (default: ending today); `--root FOLDER` points it at a different project folder.
 
+## Sample report
+
+This is part of the daily report from `run --days 30 --seed 42 --today 2026-10-26` (the full
+report also lists essentials about to expire and suppliers delivering near-expiry stock):
+
+| Checks done | Problems found | Rows rejected |
+| --- | --- | --- |
+| 15 | 6 | 5 |
+
+**Expired or spoiled food on shelves** (4 of the 6)
+
+| store | section | product | expiry_date | days_past_expiry | condition |
+| --- | --- | --- | --- | --- | --- |
+| Amandla Superette | Winnie Mandela | Potato Chips 125g | 2027-01-01 | 0 | SWOLLEN |
+| Ikhaya Spaza | Ebony Park | White Bread 700g | 2026-10-21 | 5 | OK |
+| Phumelela Supermarket | Mqantsa | Amasi 2L | 2026-10-21 | 5 | OK |
+| Siyakhula Groceries | Esangweni | Fresh Milk 1L | 2026-10-25 | 1 | EXPIRED |
+
+**Store scoreboard (last 30 days)** (first 3, and a store nobody has checked)
+
+| rank | store | checks_done | shelf_problems | verified_reports | near_expiry_items | score |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Thokoza Foods | 78 | 17 | 0 | 4 | 70 |
+| 2 | Masakhane Cash Store | 79 | 15 | 0 | 7 | 67 |
+| 3 | Siyakhula Groceries | 87 | 25 | 0 | 4 | 63 |
+| 7 | Ithemba Food Store | 0 | 0 | 0 | 1 | — |
+
+A store with no shelf checks has no score (—) and comes last: nobody has looked, so it can't be
+called safe. How the score is worked out is in [REPORTS.md](docs/REPORTS.md). The police report
+goes to `reports/police/` and isn't shown here.
+
 ## Who it's for
 
 | User | What SafeShelf gives them |
@@ -174,6 +205,30 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | [Data model](docs/DATA_MODEL.md) | ER diagram, tables, keys and constraints |
 | [Data governance](docs/DATA_GOVERNANCE.md) | Privacy (POPIA): who can see what, and for how long |
 | [Testing](docs/TESTING.md) | How to run the tests, and what each one expects from the code |
+
+## What I learned
+
+- **Run it twice, get the same result.** Recording every loaded file in `pipeline_runs` means a
+  second run loads nothing twice. That only holds if a file's rows and its record are saved in the
+  same transaction: when they were saved separately, a crash in between loaded the file again.
+- **One bad file shouldn't stop the others.** A file the database refuses is reported, counted and
+  tried again next time, while the rest still load.
+- **Privacy is easier in the database than in the reports.** Each report reads from a view made for
+  its audience, so a community report can't show a truck's location even by mistake.
+- **A fair score needs a rate, not a count.** The first scoreboard took 10 points off per problem,
+  so stores that were checked most often dropped to 0. Counting problems as a share of the checks
+  fixed that, and a store nobody has checked now has no score instead of a perfect one.
+- **Write the tests from the user stories first.** The acceptance tests came before the code, so
+  each story was done when its tests passed.
+- **Plan in small steps on a board.** Issues, milestones and a project board kept the work visible,
+  and I could move it on when the plan changed (Iterations 1-4 became one week).
+
+## Next steps
+
+- **A community dashboard** (Streamlit) so residents can see the scoreboard without opening a file ([#27](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/27))
+- **Shelf checks captured on a phone** with Google Forms, instead of CSV files ([#28](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/28))
+- **MySQL or PostgreSQL in Docker**, so more than one person can use the database at once ([#29](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/29))
+- **Real data**: a pilot with one committee and one store, to see how the rules and scores hold up
 
 ## About the data
 
