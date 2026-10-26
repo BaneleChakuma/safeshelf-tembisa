@@ -418,7 +418,7 @@ As a data engineer, I want GitHub Actions to run the tests on every push and the
 **Acceptance criteria**
 - [x] Workflow in `.github/workflows/pipeline.yml`
 - [x] Tests run on every push and pull request
-- [ ] A daily scheduled run produces the daily report and uploads it as an artifact
+- [x] A daily scheduled run produces the daily report and uploads it as an artifact
 - [x] A status badge in the README
 
 ### 26. Final README and demo
