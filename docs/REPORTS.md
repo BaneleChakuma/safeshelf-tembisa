@@ -54,13 +54,22 @@ Only verified findings count:
 
 | Finding | Counts when | Points |
 |---|---|---|
-| Shelf problem | a committee member found an item spoiled or past its date | −10 |
-| Verified report | a community report that a committee member has verified | −5 |
-| Near-expiry item | an item delivered to the store with less than half its shelf life left | −2 |
+| Shelf problem | a committee member found an item spoiled or past its date | up to −100, as a share of the checks |
+| Verified report | a community report that a committee member has verified | −5 each |
+| Near-expiry item | an item delivered to the store with less than half its shelf life left | −2 each |
 
 ```
-score = 100 − 10 × shelf problems − 5 × verified reports − 2 × near-expiry items   (never below 0)
+score = 100 − 100 × shelf problems ÷ checks done − 5 × verified reports − 2 × near-expiry items
+        (never below 0; no score if the store had no shelf checks)
 ```
+
+Why shelf problems count as a share of the checks: a store that's checked 90 times will have more
+problems in total than one checked 10 times, even if it's safer. Counting problems as a share is
+fair to stores that are checked often. Counting them one by one would push every busy store's
+score down to 0, with no way to tell them apart.
+
+Why a store with no shelf checks has no score and comes last: nobody has looked, so the
+scoreboard can't call it safe. In the daily report its score is shown as "—".
 
 Why these weights: a shelf problem is the strongest evidence, because a committee member saw it
 on the shelf. A verified report is confirmed but less direct. A near-expiry delivery is partly
