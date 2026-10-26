@@ -85,14 +85,14 @@ def test_committee_members_are_recorded_by_initials_and_section_only():
         assert len(member["initials"]) <= 6, f"use initials, not a full name: {member}"
 
 
-def test_a_script_loads_the_reference_data_into_the_database(tmp_path):
+def test_a_script_loads_the_reference_data_into_the_database(database):
     connect = need("safeshelf.db", "connect", issue=4)
     create_schema = need("safeshelf.db", "create_schema", issue=4)
     load_reference_data = need("safeshelf.db", "load_reference_data", issue=5)
     for name in FILES:
         need_file(f"data/reference/{name}.csv", issue=5)
 
-    conn = connect(tmp_path / "test.db")
+    conn = connect()
     create_schema(conn)
     load_reference_data(conn, PROJECT_DIR / "data" / "reference")
 

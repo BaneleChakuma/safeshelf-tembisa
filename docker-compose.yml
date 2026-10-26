@@ -1,0 +1,30 @@
+# The SafeShelf database: PostgreSQL in Docker. Issue #29.
+#
+#   docker compose up -d      start it (the first time, it downloads PostgreSQL)
+#   docker compose ps         check it's running ("healthy")
+#   docker compose down       stop it; the data is kept in the safeshelf-data volume
+#   docker compose down -v    stop it and delete the data too
+#
+# The user name and password are for your own computer only. The pipeline finds the database
+# through SAFESHELF_DATABASE_URL, which defaults to this one (src/safeshelf/settings.py).
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: safeshelf
+      POSTGRES_USER: safeshelf
+      POSTGRES_PASSWORD: safeshelf
+    ports:
+      - "127.0.0.1:5432:5432"  # only this computer can connect, not the rest of the network
+    volumes:
+      - safeshelf-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "safeshelf", "-d", "safeshelf"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  safeshelf-data:

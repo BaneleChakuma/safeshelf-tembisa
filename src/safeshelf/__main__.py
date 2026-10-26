@@ -6,11 +6,13 @@
 """
 
 import argparse
-import sqlite3
 import sys
 from datetime import date
 from pathlib import Path
 
+import psycopg
+
+from safeshelf import db
 from safeshelf.forms import import_form_responses
 from safeshelf.pipeline import run_pipeline
 from safeshelf.settings import PROJECT_DIR
@@ -43,11 +45,15 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.command == "rebuild":
-            (args.root / "data" / "safeshelf.db").unlink(missing_ok=True)
+            conn = db.connect()
+            try:
+                db.drop_everything(conn)
+            finally:
+                conn.close()
             summary = run_pipeline(args.root, today=args.today)
         else:
             summary = run_pipeline(args.root, today=args.today, days=args.days, seed=args.seed)
-    except (OSError, sqlite3.Error, ValueError) as error:
+    except (OSError, psycopg.Error, ValueError) as error:
         # A short message, not a traceback: the person running it needs to know what to fix.
         print(f"Error: {error}", file=sys.stderr)
         return 1

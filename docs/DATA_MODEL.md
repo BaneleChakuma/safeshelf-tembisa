@@ -125,7 +125,7 @@ erDiagram
 | `shelf_checks` | `condition IN ('OK', 'EXPIRED', 'MOULDY', 'DAMAGED_PACKAGING', 'SWOLLEN', 'NOT_COLD')` |
 | `community_reports` | `issue_type IN ('EXPIRED', 'SPOILED', 'BAD_SMELL', 'SICK_AFTER_EATING', 'OTHER')`; `verified` defaults to 0 |
 | `trip_events` | `event_type IN ('DEPARTED', 'CHECKPOINT', 'STOPPED', 'ARRIVED')`; `latitude` and `longitude` are emptied after 30 days (POPIA) |
-| All tables | Primary key on the ID; foreign keys switched on with `PRAGMA foreign_keys = ON` |
+| All tables | Primary key on the ID; PostgreSQL always checks foreign keys. Dates are `DATE` and times are `TIMESTAMP`, so an impossible date can't be stored |
 
 ## Monitoring table
 

@@ -42,7 +42,7 @@ flowchart LR
     F --> G["Validate<br/>data quality rules"]
     G -- "bad rows, with the reason" --> R["data/rejected/"]
     G --> L["Load<br/>one transaction per file"]
-    L --> DB[("SQLite<br/>+ pipeline_runs")]
+    L --> DB[("PostgreSQL<br/>+ pipeline_runs")]
     DB --> V1["committee_view"]
     DB --> V2["store_view"]
     DB --> V3["community_view"]
@@ -69,11 +69,13 @@ and who can see what is in [DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md).
 
 ## How to run
 
-You need Python 3.10 or newer. The pipeline will only use Python's standard library; pytest is for the tests.
+You need Python 3.10 or newer and Docker, which runs the PostgreSQL database. The Python
+packages are psycopg (to talk to the database) and pytest (for the tests).
 
 ```bash
 git clone https://github.com/BaneleChakuma/safeshelf-tembisa.git
 cd safeshelf-tembisa
+docker compose up -d                                # start the database
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -82,7 +84,7 @@ python -m pytest                                    # run the tests
 PYTHONPATH=src python -m safeshelf run --days 30    # simulate 30 days and run every step
 ```
 
-`run` simulates the data, builds the database in `data/safeshelf.db`, loads the files in
+`run` simulates the data, builds the tables in the database, loads the files in
 `data/incoming/` (bad rows go to `data/rejected/` with the reason), removes truck locations older
 than 30 days and writes the reports to `reports/`. It ends with a short summary:
 
@@ -104,6 +106,50 @@ Police alerts:   0
 If a whole file can't be loaded, nothing from it is kept, the other files still load, the run
 ends with exit code 1 and the next run tries that file again. Running it again only loads new files. To start the database again from every file in
 `data/incoming/`, run `PYTHONPATH=src python -m safeshelf rebuild`.
+
+## The database
+
+SafeShelf keeps its data in **PostgreSQL 16**, which `docker-compose.yml` runs in Docker. The data
+is kept in a Docker volume, so it's still there after a restart.
+
+| Command | What it does |
+|---|---|
+| `docker compose up -d` | Start the database (the first time, Docker downloads PostgreSQL) |
+| `docker compose ps` | Check it's running: it should say `healthy` |
+| `docker compose exec db psql -U safeshelf` | Open a SQL prompt, to look at the tables yourself (`\q` to leave) |
+| `docker compose down` | Stop it. The data is kept |
+| `docker compose down -v` | Stop it and delete all the data |
+
+If `docker compose` says `unknown command`, install Docker's Compose plugin once:
+`sudo apt install docker-compose-v2`.
+
+**Using another PostgreSQL server.** The pipeline connects to the address in
+`SAFESHELF_DATABASE_URL`. Without it, it uses the Docker one,
+`postgresql://safeshelf:safeshelf@localhost:5432/safeshelf`. To use a different server, set it
+before running:
+
+```bash
+export SAFESHELF_DATABASE_URL=postgresql://user:password@host:5432/safeshelf
+PYTHONPATH=src python -m safeshelf run
+```
+
+The tests use `SAFESHELF_TEST_DATABASE_URL` in the same way. Each test makes an empty schema of
+its own and deletes it afterwards, so the tests never touch your data.
+
+**Who can see what.** The database has a role for each audience: `safeshelf_community`,
+`safeshelf_committee`, `safeshelf_store` and `safeshelf_police`. Each one can read only its own
+view, and the pipeline runs every report as its audience's role. So PostgreSQL itself refuses if,
+say, the community scoreboard ever tried to read truck locations. To give a person their own
+login, put them in one of the roles:
+
+```sql
+CREATE USER thandi PASSWORD 'choose-a-password' IN ROLE safeshelf_committee;
+```
+
+[DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md) lists what each role can see.
+
+The user name and password in `docker-compose.yml` are for your own computer only. The database
+only accepts connections from this computer.
 
 ## Automation
 
@@ -208,7 +254,7 @@ The full daily report from the sample run above, as it looks in a Markdown previ
 
 ## Tech stack
 
-Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
+Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · pytest · GitHub Actions · GitHub Projects
 
 ## Project structure
 
@@ -219,7 +265,8 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | `data/templates/` | Example CSV files showing the format each input file should follow |
 | `data/incoming/`, `data/rejected/` | Created by the pipeline at runtime (accepted and rejected input files); not committed to Git |
 | `reports/` | Created by the pipeline: the daily report, and the police report in `reports/police/`; not committed to Git |
-| `sql/` | `schema.sql` (the database structure) and `sql/reports/` (the queries behind each report) |
+| `sql/` | `schema.sql` (the tables, views and roles) and `sql/reports/` (the queries behind each report) |
+| `docker-compose.yml` | Starts the PostgreSQL database in Docker |
 | `src/safeshelf/` | The pipeline's Python package: extract, validate, clean, load, reports |
 | `tests/` | Unit, acceptance and end-to-end tests — see [the testing guide](docs/TESTING.md) |
 | `setup/` | One-off scripts for setting up the GitHub repo and project board |

@@ -1,4 +1,4 @@
--- Expired or spoiled food found on shelves on :as_of, per store. Issue #15.
+-- Expired or spoiled food found on shelves on %(as_of)s, per store. Issue #15.
 -- Audience: committee members, so it's built from committee_view.
 --
 -- An item is on the list if its condition isn't OK, or if its expiry date has passed (even
@@ -9,11 +9,11 @@ SELECT store,
        product,
        batch_code AS batch,
        expiry_date,
-       MAX(0, CAST(julianday(date(recorded_at)) - julianday(expiry_date) AS INTEGER)) AS days_past_expiry,
+       GREATEST(0, recorded_at::date - expiry_date) AS days_past_expiry,
        condition,
-       date(recorded_at) AS date_checked
+       recorded_at::date AS date_checked
 FROM committee_view
 WHERE record_type = 'shelf check'
-  AND date(recorded_at) = :as_of
-  AND (condition <> 'OK' OR expiry_date < date(recorded_at))
+  AND recorded_at::date = %(as_of)s
+  AND (condition <> 'OK' OR expiry_date < recorded_at::date)
 ORDER BY store, days_past_expiry DESC, product, batch;

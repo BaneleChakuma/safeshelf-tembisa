@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # The live part of the demo (docs/DEMO.md): a pipeline run on 30 days of simulated data.
-# It runs in a fresh folder, so the project's own data/ and reports/ aren't touched.
+# It runs in a fresh folder and its own database schema (safeshelf_demo, emptied each time), so
+# the project's own data/, reports/ and database aren't touched. PostgreSQL must be running:
+# docker compose up -d
 #
 #   bash scripts/demo.sh              # press Enter to go to the next step
 #   bash scripts/demo.sh --no-pause   # run straight through, to rehearse
@@ -18,6 +20,22 @@ export PYTHONPATH=src
 DEMO=$(mktemp -d -t safeshelf-demo-XXXX)
 mkdir -p "$DEMO/data"
 cp -r data/reference "$DEMO/data/"
+
+# An empty schema of its own in the usual database, found through SAFESHELF_DATABASE_URL.
+SAFESHELF_DATABASE_URL=$("$PY" - <<'PY'
+import psycopg
+from psycopg.conninfo import make_conninfo
+from safeshelf.settings import database_url
+try:
+    with psycopg.connect(database_url(), autocommit=True) as conn:
+        conn.execute("DROP SCHEMA IF EXISTS safeshelf_demo CASCADE")
+        conn.execute("CREATE SCHEMA safeshelf_demo")
+except psycopg.OperationalError:
+    raise SystemExit("Can't connect to PostgreSQL. Start it first: docker compose up -d")
+print(make_conninfo(database_url(), options="-c search_path=safeshelf_demo"))
+PY
+)
+export SAFESHELF_DATABASE_URL
 
 step() {
     echo
@@ -68,13 +86,19 @@ echo
 echo "\$ cat reports/police/trip_alerts_$TODAY.csv"
 cat "$DEMO/reports/police/trip_alerts_$TODAY.csv"
 echo
-echo "Each report reads from a view made for its audience:"
-"$PY" - "$DEMO/data/safeshelf.db" <<'PY'
-import sqlite3, sys
-conn = sqlite3.connect(sys.argv[1])
-for view in ["community_view", "police_view"]:
-    columns = [row[1] for row in conn.execute(f"PRAGMA table_info({view})")]
-    print(f"  {view:<16}{', '.join(columns)}")
+echo "Each report runs as its audience's database role. The community's role tries to read the trucks:"
+echo
+"$PY" - <<'PY'
+import psycopg
+from safeshelf import db
+conn = db.connect()
+conn.execute("SET ROLE safeshelf_community")
+for sql in ["SELECT COUNT(*) FROM community_view", "SELECT latitude, longitude FROM trip_events"]:
+    print(f"  safeshelf_community=> {sql};")
+    try:
+        print(f"  {conn.execute(sql).fetchone()[0]} rows\n")
+    except psycopg.errors.InsufficientPrivilege as error:
+        print(f"  ERROR: {error}")
 PY
 
 echo

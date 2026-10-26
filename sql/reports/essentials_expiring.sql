@@ -1,4 +1,4 @@
--- Essential items that expire within :days days of :as_of (today included). Issue #16.
+-- Essential items that expire within %(days)s days of %(as_of)s (today included). Issue #16.
 -- Audience: store managers, so it's built from store_view.
 --
 -- A batch can be checked more than once; only its most recent check counts.
@@ -11,18 +11,18 @@ WITH latest_checks AS (
            ) AS newest_first
     FROM store_view
     WHERE record_type = 'shelf check'
-      AND date(recorded_at) <= :as_of
+      AND recorded_at::date <= %(as_of)s
 )
 SELECT store,
        section,
        product,
        batch_code AS batch,
        expiry_date,
-       CAST(julianday(expiry_date) - julianday(:as_of) AS INTEGER) AS days_left,
+       expiry_date - %(as_of)s::date AS days_left,
        quantity AS quantity_on_shelf,
-       date(recorded_at) AS last_checked
+       recorded_at::date AS last_checked
 FROM latest_checks
 WHERE newest_first = 1
   AND is_essential = 1
-  AND expiry_date BETWEEN :as_of AND date(:as_of, '+' || :days || ' days')
-ORDER BY expiry_date, store, product;
+  AND expiry_date BETWEEN %(as_of)s AND %(as_of)s::date + %(days)s::integer
+ORDER BY expiry_date, store, product, batch;

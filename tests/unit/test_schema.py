@@ -2,11 +2,10 @@
 
 These tests run the SQL file straight into an empty database, so they work as soon as
 sql/schema.sql exists, before any Python code is written. The `schema_db` fixture (in
-tests/conftest.py) builds that database with foreign keys switched on.
+tests/conftest.py) builds that database in an empty PostgreSQL schema.
 """
 
-import sqlite3
-
+import psycopg
 import pytest
 
 from helpers import (
@@ -81,27 +80,38 @@ def test_each_table_has_the_columns_in_the_data_model(schema_db, table):
 
 @pytest.mark.parametrize("table", TABLE_COLUMNS)
 def test_every_table_has_a_primary_key(schema_db, table):
-    key_columns = [row["name"] for row in query(schema_db, f"PRAGMA table_info({table})") if row["pk"]]
-    assert key_columns, f"{table} has no primary key"
+    keys = query(
+        schema_db,
+        "SELECT constraint_name FROM information_schema.table_constraints"
+        " WHERE table_schema = current_schema() AND table_name = %s AND constraint_type = 'PRIMARY KEY'",
+        (table,),
+    )
+    assert keys, f"{table} has no primary key"
 
 
 @pytest.mark.parametrize("table, column, parent", FOREIGN_KEYS)
 def test_every_relationship_has_a_foreign_key(schema_db, table, column, parent):
-    keys = query(schema_db, f"PRAGMA foreign_key_list({table})")
-    assert any(key["from"] == column and key["table"] == parent for key in keys), (
+    keys = query(
+        schema_db,
+        "SELECT a.attname AS from_column, c.confrelid::regclass::text AS parent"
+        " FROM pg_constraint c JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)"
+        " WHERE c.contype = 'f' AND c.conrelid = %s::regclass",
+        (table,),
+    )
+    assert any(key["from_column"] == column and key["parent"] == parent for key in keys), (
         f"{table}.{column} should be a foreign key to {parent}"
     )
 
 
 def test_a_delivery_to_a_store_that_does_not_exist_is_refused(schema_db):
     add_one_of_everything(schema_db)
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(psycopg.IntegrityError):
         insert(schema_db, "deliveries", delivery_record(delivery_id="D2", store_id="ST99"))
 
 
 def test_running_the_schema_twice_does_not_fail(schema_db):
     schema = need_file("sql/schema.sql", issue=4)
-    schema_db.executescript(schema.read_text(encoding="utf-8"))  # the fixture already ran it once
+    schema_db.execute(schema.read_text(encoding="utf-8"))  # the fixture already ran it once
 
 
 # --- CHECK constraints: the database itself refuses bad values ----------------------------
@@ -109,7 +119,7 @@ def test_running_the_schema_twice_does_not_fail(schema_db):
 
 def test_shelf_life_must_be_more_than_zero(schema_db):
     insert(schema_db, "products", product_record(product_id="P01", shelf_life_days=4))
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(psycopg.IntegrityError):
         insert(schema_db, "products", product_record(product_id="P02", shelf_life_days=0))
 
 
@@ -117,7 +127,7 @@ def test_shelf_life_must_be_more_than_zero(schema_db):
 def test_a_delivered_quantity_must_be_more_than_zero(schema_db, quantity):
     add_one_of_everything(schema_db)
     insert(schema_db, "delivery_items", delivery_item_record(quantity=1))
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(psycopg.IntegrityError):
         insert(schema_db, "delivery_items", delivery_item_record(quantity=quantity))
 
 
@@ -125,7 +135,7 @@ def test_expiry_date_cannot_be_before_production_date(schema_db):
     add_one_of_everything(schema_db)
     same_day = delivery_item_record(production_date="2026-11-01", expiry_date="2026-11-01")
     insert(schema_db, "delivery_items", same_day)
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(psycopg.IntegrityError):
         backwards = delivery_item_record(production_date="2026-11-05", expiry_date="2026-11-01")
         insert(schema_db, "delivery_items", backwards)
 
@@ -138,7 +148,7 @@ def test_each_allowed_shelf_check_condition_is_accepted(schema_db, condition):
 
 def test_any_other_shelf_check_condition_is_refused(schema_db):
     add_one_of_everything(schema_db)
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(psycopg.IntegrityError):
         insert(schema_db, "shelf_checks", shelf_check_record(condition="BROKEN"))
 
 
@@ -150,7 +160,7 @@ def test_each_allowed_issue_type_is_accepted(schema_db, issue_type):
 
 def test_any_other_issue_type_is_refused(schema_db):
     add_one_of_everything(schema_db)
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(psycopg.IntegrityError):
         insert(schema_db, "community_reports", community_report_record(issue_type="LATE"))
 
 
@@ -162,7 +172,7 @@ def test_each_allowed_trip_event_type_is_accepted(schema_db, event_type):
 
 def test_any_other_trip_event_type_is_refused(schema_db):
     add_one_of_everything(schema_db)
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(psycopg.IntegrityError):
         insert(schema_db, "trip_events", trip_event_record(event_type="PARKED"))
 
 
@@ -174,7 +184,7 @@ def test_a_new_community_report_is_not_verified(schema_db):
 
 def test_a_file_name_can_only_be_recorded_once_in_pipeline_runs(schema_db):
     insert(schema_db, "pipeline_runs", pipeline_run_record(file_name="trips_2026-11-02.csv"))
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(psycopg.IntegrityError):
         insert(schema_db, "pipeline_runs", pipeline_run_record(file_name="trips_2026-11-02.csv"))
 
 

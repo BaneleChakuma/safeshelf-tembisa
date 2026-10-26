@@ -7,8 +7,7 @@ Function these tests expect:
 file type. All the rows go in, or none do.
 """
 
-import sqlite3
-
+import psycopg
 import pytest
 
 from helpers import (
@@ -59,12 +58,12 @@ def test_numbers_are_stored_as_numbers_not_text(db, load_rows):
     load_rows(db, "shelf_checks", [shelf_check_row(quantity_on_shelf="10")])
     load_rows(db, "trip_events", [trip_event_row(latitude="-26.0412", longitude="28.2015")])
 
-    assert query(db, "SELECT quantity, typeof(quantity) AS type FROM delivery_items") == [
+    assert query(db, "SELECT quantity, pg_typeof(quantity)::text AS type FROM delivery_items") == [
         {"quantity": 24, "type": "integer"}
     ]
-    assert query(db, "SELECT typeof(quantity_on_shelf) AS type FROM shelf_checks") == [{"type": "integer"}]
-    assert query(db, "SELECT latitude, longitude, typeof(latitude) AS type FROM trip_events") == [
-        {"latitude": -26.0412, "longitude": 28.2015, "type": "real"}
+    assert query(db, "SELECT pg_typeof(quantity_on_shelf)::text AS type FROM shelf_checks") == [{"type": "integer"}]
+    assert query(db, "SELECT latitude, longitude, pg_typeof(latitude)::text AS type FROM trip_events") == [
+        {"latitude": -26.0412, "longitude": 28.2015, "type": "double precision"}
     ]
 
 
@@ -80,12 +79,12 @@ def test_empty_optional_values_are_stored_as_null(db, load_rows):
 
 def test_a_file_is_loaded_all_or_nothing(db, load_rows):
     """If one row can't go in, the rows before it are taken out again (one transaction).
-    The error from SQLite is passed on, so the pipeline knows the file failed."""
+    The database's error is passed on, so the pipeline knows the file failed."""
     rows = [
         delivery_item_row(batch_code="B-1"),
         delivery_item_row(batch_code="B-2", delivery_id="D999"),  # no such delivery
     ]
-    with pytest.raises(sqlite3.Error):
+    with pytest.raises(psycopg.Error):
         load_rows(db, "delivery_items", rows)
     assert count_rows(db, "delivery_items") == 0
 
