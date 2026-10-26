@@ -46,11 +46,13 @@ def main(argv: list[str] | None = None) -> int:
 
     print()
     print(f"Files processed: {summary['files_processed']}")
+    print(f"Files failed:    {summary['files_failed']}")
     print(f"Rows loaded:     {summary['rows_loaded']}")
     print(f"Rows rejected:   {summary['rows_rejected']}")
     print(f"Police alerts:   {summary['police_alerts']}")
     print(f"Reports written to {args.root / 'reports'}")
-    return 0
+    # The reports are still written, but a file that failed needs looking at: say so in the exit code.
+    return 1 if summary["files_failed"] else 0
 
 
 if __name__ == "__main__":

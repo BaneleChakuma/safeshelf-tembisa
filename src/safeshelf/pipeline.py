@@ -2,6 +2,7 @@
 
 import csv
 import sqlite3
+import sys
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
@@ -20,7 +21,7 @@ def run_pipeline(root: str | Path, today: date, days: int | None = None, seed: i
     builds the database, loads the reference data and the new incoming files, removes old truck
     locations and writes the daily report and the police report.
 
-    Returns files_processed, rows_read, rows_loaded, rows_rejected and police_alerts.
+    Returns files_processed, files_failed, rows_read, rows_loaded, rows_rejected and police_alerts.
     """
     root = Path(root)
     if days is not None:
@@ -48,14 +49,23 @@ def process_incoming(conn: sqlite3.Connection, root: str | Path, today: date) ->
 
     Bad rows go to <root>/data/rejected/<file>_rejected.csv with the reason. Each file is
     recorded in pipeline_runs, so it's never loaded twice.
+
+    If a whole file fails (for example the database refuses it), nothing from it is kept, it's
+    counted in files_failed and the other files are still loaded. It isn't recorded in
+    pipeline_runs, so the next run tries it again.
     """
     root = Path(root)
     aliases = load_aliases(root / "data" / "reference")
     processed = {row[0] for row in conn.execute("SELECT file_name FROM pipeline_runs")}
-    summary = {"files_processed": 0, "rows_read": 0, "rows_loaded": 0, "rows_rejected": 0}
+    summary = {"files_processed": 0, "files_failed": 0, "rows_read": 0, "rows_loaded": 0, "rows_rejected": 0}
 
     for path in find_new_files(root / "data" / "incoming", processed):
-        rows_read, rows_loaded, rows_rejected = process_file(conn, path, root, aliases, today)
+        try:
+            rows_read, rows_loaded, rows_rejected = process_file(conn, path, root, aliases, today)
+        except (OSError, sqlite3.Error, ValueError) as error:
+            print(f"{path.name}: failed, will try again next run: {error}", file=sys.stderr)
+            summary["files_failed"] += 1
+            continue
         print(f"{path.name}: {rows_loaded} loaded, {rows_rejected} rejected")
         summary["files_processed"] += 1
         summary["rows_read"] += rows_read

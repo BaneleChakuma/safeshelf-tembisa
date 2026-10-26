@@ -16,7 +16,9 @@ import sqlite3
 
 import pytest
 
-from helpers import FILE_TYPES, last_number_after, need_command, query, run_command
+from datetime import date
+
+from helpers import FILE_TYPES, last_number_after, need_command, query, run_command, shelf_check_row, write_incoming
 
 pytestmark = pytest.mark.issue(23)
 
@@ -115,6 +117,23 @@ def test_a_failing_step_stops_with_a_clear_message_and_an_error_exit_code(projec
     assert result.returncode != 0
     assert "stores.csv" in printed, "say which file is missing"
     assert "Traceback" not in printed, "show a short message, not a Python traceback"
+
+
+def test_a_file_that_fails_is_reported_and_the_run_ends_with_an_error_exit_code(project, first_run):
+    write_incoming(project, "shelf_checks", date(2026, 11, 4), [shelf_check_row(checked_at="2026-11-04 09:00:00")])
+    conn = sqlite3.connect(project / "data" / "safeshelf.db")
+    conn.execute("CREATE TRIGGER refuse_checks BEFORE INSERT ON shelf_checks BEGIN SELECT RAISE(ABORT, 'refused'); END")
+    conn.commit()
+    conn.close()
+
+    result = run_command("safeshelf", "run", "--today", "2026-11-04", root=project)
+
+    printed = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "shelf_checks_2026-11-04.csv" in printed, "say which file failed"
+    assert last_number_after(printed, "files failed") == 1
+    assert (project / "reports" / "daily_2026-11-04.md").exists(), "the reports are still written"
+    assert "Traceback" not in printed
 
 
 @pytest.mark.issue(21)
