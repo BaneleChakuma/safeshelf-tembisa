@@ -58,3 +58,19 @@ It takes about a minute. If anything goes wrong halfway, fix it and run it again
 On the website, open the board and click the small arrow next to the view name ("View 1"). Choose **Layout → Board**, then **Save**. Your issues now show as cards in **Todo / In Progress / Done** columns.
 
 Optional: add a **Backlog** or **In Review** column with the **+** at the right of the board.
+
+## Adding a column later
+
+To add a column after the board is set up, use `add_status_column.py` rather than editing the Status field by hand. When GitHub replaces the list of columns, cards can lose their column. The script keeps every card where it is. Preview first:
+
+```bash
+python3 setup/add_status_column.py Testing --before Done --dry-run
+```
+
+It shows the columns now and after, and changes nothing. Then add it:
+
+```bash
+python3 setup/add_status_column.py Testing --before Done
+```
+
+It saves a backup of every card's column first, then checks afterwards that every card is still in place and puts back any that moved. It reads the account and board name from `backlog.json`. Use `--owner` and `--project` for a different board, `--color` to pick the colour (purple by default), and `--yes` to skip the confirmation. If the column already exists, it changes nothing. If the new column doesn't show on the board, scroll to the right of the columns, click **+** and tick it.
