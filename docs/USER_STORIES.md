@@ -404,9 +404,9 @@ As a data engineer, I want one command that runs simulate → extract → valida
 As a data engineer, I want automated tests for validation, cleaning and reports, so that changes don't silently break the pipeline.
 
 **Acceptance criteria**
-- [ ] pytest tests for every validation rule and cleaning step
-- [ ] Each report query is tested against a small test database with known answers
-- [ ] All tests pass with `python -m pytest`
+- [x] pytest tests for every validation rule and cleaning step
+- [x] Each report query is tested against a small test database with known answers
+- [x] All tests pass with `python -m pytest`
 
 ### 25. Daily pipeline on GitHub Actions
 
