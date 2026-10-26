@@ -24,6 +24,9 @@ all read the same way. Only the columns below are kept; anything else in the fil
 | member_id | Your committee member ID. Never your name (POPIA) | CM01 |
 | photo_ref | Optional: the file name of a photo you took as evidence | IMG_0042.jpg |
 
+Shelf checks can also come from the Google Form ([docs/GOOGLE_FORM.md](../docs/GOOGLE_FORM.md)). Its
+import writes them as `shelf_checks_<YYYY-MM-DD>_form.csv` (then `_form2` ...), with these columns.
+
 ## deliveries.csv: a delivery to a store (#8)
 
 | Column | What to write | Example |
