@@ -391,10 +391,10 @@ One-command pipeline, automated tests, daily GitHub Actions run, final docs and 
 As a data engineer, I want one command that runs simulate → extract → validate → clean → load → report, so that anyone can reproduce my results on a fresh clone.
 
 **Acceptance criteria**
-- [ ] `python -m safeshelf run --days 30` runs every step
-- [ ] Works on a fresh clone by following the README
-- [ ] Prints a short summary: files processed, rows loaded, rows rejected, alerts found
-- [ ] Stops with a clear error message and exit code if a step fails
+- [x] `python -m safeshelf run --days 30` runs every step
+- [x] Works on a fresh clone by following the README
+- [x] Prints a short summary: files processed, rows loaded, rows rejected, alerts found
+- [x] Stops with a clear error message and exit code if a step fails
 
 ### 24. Automated tests
 
