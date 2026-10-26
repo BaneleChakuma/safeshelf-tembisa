@@ -1,0 +1,60 @@
+# SafeShelf on GitHub Actions. Issue #25.
+#
+#   tests          on every push and pull request: python -m pytest
+#   daily-report   every morning (and from the Actions tab: "Run workflow"): runs the pipeline on
+#                  30 days of simulated data and uploads the daily report
+#
+# See the results in the Actions tab.
+
+name: Pipeline
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 4 * * *"  # 04:00 UTC is 06:00 in South Africa
+  workflow_dispatch:  # a "Run workflow" button in the Actions tab, handy for a demo
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The oldest Python the README supports, and a newer one.
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest
+
+  daily-report:
+    # Only on the schedule or the button, and only if the tests passed.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: tests
+    runs-on: ubuntu-latest
+    env:
+      TZ: Africa/Johannesburg  # so "today" and the police report's "now" are Tembisa's time
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # The pipeline only uses Python's standard library, so there's nothing to install.
+      - run: python -m safeshelf run --days 30
+        env:
+          PYTHONPATH: src
+      # Show the daily report on the run's page. It has no names and no truck locations (#21).
+      - run: cat reports/daily_*.md >> "$GITHUB_STEP_SUMMARY"
+      # The police report stays out: truck locations are for the police only (POPIA, #22),
+      # and anyone who can see this repository can download its artifacts.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: daily-report
+          path: |
+            reports/
+            !reports/police/
+          retention-days: 30

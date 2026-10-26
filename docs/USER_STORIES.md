@@ -416,10 +416,10 @@ As a data engineer, I want automated tests for validation, cleaning and reports,
 As a data engineer, I want GitHub Actions to run the tests on every push and the pipeline once a day, so that the project keeps working and reports are produced automatically.
 
 **Acceptance criteria**
-- [ ] Workflow in `.github/workflows/pipeline.yml`
-- [ ] Tests run on every push and pull request
+- [x] Workflow in `.github/workflows/pipeline.yml`
+- [x] Tests run on every push and pull request
 - [ ] A daily scheduled run produces the daily report and uploads it as an artifact
-- [ ] A status badge in the README
+- [x] A status badge in the README
 
 ### 26. Final README and demo
 

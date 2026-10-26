@@ -1,5 +1,7 @@
 # SafeShelf Tembisa
 
+[![Pipeline](https://github.com/BaneleChakuma/safeshelf-tembisa/actions/workflows/pipeline.yml/badge.svg?branch=main)](https://github.com/BaneleChakuma/safeshelf-tembisa/actions/workflows/pipeline.yml)
+
 **A data pipeline that helps communities keep expired and spoiled food off supermarket shelves, and keeps delivery trucks safe.**
 
 > 🚧 **Status: in progress.** The pipeline runs end to end on simulated data. See the [project plan](docs/PLAN.md), the [user stories](docs/USER_STORIES.md) and the project board (Projects tab).
@@ -72,6 +74,14 @@ Police alerts:   0
 
 Running it again only loads new files. To start the database again from every file in
 `data/incoming/`, run `PYTHONPATH=src python -m safeshelf rebuild`.
+
+## Automation
+
+GitHub Actions ([`.github/workflows/pipeline.yml`](.github/workflows/pipeline.yml)) runs the tests on
+every push and pull request, on Python 3.10 and 3.12. Every morning at 06:00 it also runs the
+pipeline on 30 days of simulated data and uploads the daily report as an artifact called
+`daily-report`. To run it yourself, open the Actions tab, choose *Pipeline* and press *Run workflow*.
+The police report is never uploaded: truck locations are for the police only.
 
 On Ubuntu or Pop!_OS, if `python3 -m venv` complains, run `sudo apt install python3-venv` first.
 Run `source .venv/bin/activate` again in every new terminal.
