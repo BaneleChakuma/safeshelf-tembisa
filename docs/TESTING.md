@@ -10,10 +10,17 @@ they fail (red) until the function does what the issue asks, then pass (green).
 ## Set up (once)
 
 ```bash
+docker compose up -d                # the PostgreSQL database the tests use
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+The tests that use the database need it running. Each of them gets an empty schema of its own
+(`test_<random letters>`), which is deleted when the test ends, so they never touch your data.
+If the database isn't running, those tests fail with `Can't connect to PostgreSQL. Start it with:
+docker compose up -d`; the others still run. To use a different server, set
+`SAFESHELF_TEST_DATABASE_URL`.
 
 If `python3 -m venv` says ensurepip isn't available, run `sudo apt install python3-venv` first.
 Run `source .venv/bin/activate` again whenever you open a new terminal.
@@ -94,7 +101,7 @@ differently, change the test as well and say why in your pull request. The colum
 | `data/templates/` | One empty CSV file per incoming type, plus `README.md` describing every column |
 | `data/incoming/` | New files waiting to be loaded |
 | `data/rejected/` | `<file name without .csv>_rejected.csv`: the bad rows, with their original values and a `reason` column (phone and ID numbers removed, and truck locations after 30 days) |
-| `data/safeshelf.db` | The database |
+| PostgreSQL | The database: `SAFESHELF_DATABASE_URL`, or the one `docker-compose.yml` starts |
 | `reports/` | `daily_YYYY-MM-DD.md`, a CSV file per table (`daily_YYYY-MM-DD_<table>.csv`) and `police/` |
 
 Find the `sql/` folder from the code's own location, for example
@@ -130,9 +137,10 @@ text version, for example `as_of.isoformat()`. Reports return a list of dicts.
 
 | Module | Function | Issue | What the tests expect |
 |---|---|---|---|
-| `db.py` | `connect(path)` | #4 | A connection with `PRAGMA foreign_keys = ON` |
+| `db.py` | `connect(url=None)` | #4, #29 | A psycopg connection (autocommit) to `settings.database_url()`; says to run `docker compose up -d` if it can't connect |
+| | `drop_everything(conn)` | #14 | Deletes every table and view, for `rebuild` |
 | | `create_schema(conn)` | #4 | Runs `sql/schema.sql`; safe to run twice |
-| | `load_reference_data(conn, folder)` | #5 | Loads the five reference tables from CSV. Safe to run again, and never deletes rows that point to them (use `INSERT ... ON CONFLICT DO UPDATE`, not `INSERT OR REPLACE`) |
+| | `load_reference_data(conn, folder)` | #5 | Loads the five reference tables from CSV. Safe to run again, and never deletes rows that point to them (use `INSERT ... ON CONFLICT DO UPDATE`) |
 | | `verify_report(conn, report_id)` | #9 | Sets `verified` to 1 |
 | | `known_ids(conn)` | #12 | `{"stores": {...}, "suppliers": ..., "products": ..., "members": ..., "vehicles": ..., "trips": ..., "deliveries": ...}` |
 | `simulate.py` | `generate(root, days, seed, start)` | #6 | Reads `<root>/data/reference` and writes one file per type per day into `<root>/data/incoming`. Returns the paths. Same seed, same files |
@@ -242,9 +250,10 @@ tests/
   acceptance/
     conftest.py            the process_incoming and world_db fixtures
     test_story_05_reference_data.py ... test_story_23_one_command.py   one file per user story
+    test_story_29_postgres_roles.py  #29  each audience's role reads only its own view
   e2e/
     test_e2e_simulate_command.py     python -m safeshelf.simulate
     test_e2e_run_command.py          python -m safeshelf run / rebuild
 ```
 
-These tests were checked on Python 3.10 (Pop!_OS 22.04) and Python 3.13.
+These tests were checked on Python 3.10 (Pop!_OS 22.04) and Python 3.13, with PostgreSQL 16.

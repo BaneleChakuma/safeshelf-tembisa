@@ -145,14 +145,14 @@ def test_it_includes_delayed_trucks(simulated):
     assert late
 
 
-def test_about_5_to_10_percent_of_rows_are_bad(simulated, tmp_path):
+def test_about_5_to_10_percent_of_rows_are_bad(simulated, tmp_path, database):
     """Run the real pipeline over the simulated data: 3% to 15% of rows should be rejected."""
     connect = need("safeshelf.db", "connect", issue=4)
     create_schema = need("safeshelf.db", "create_schema", issue=4)
     load_reference_data = need("safeshelf.db", "load_reference_data", issue=5)
     process_incoming = need("safeshelf.pipeline", "process_incoming", issue=11)
     root = shutil.copytree(simulated, tmp_path / "copy")
-    conn = connect(root / "data" / "safeshelf.db")
+    conn = connect()
     create_schema(conn)
     load_reference_data(conn, root / "data" / "reference")
 

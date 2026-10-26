@@ -11,7 +11,8 @@ from datetime import timedelta
 
 import pytest
 
-from helpers import TODAY, community_report_row, count_rows, dump, query, shelf_check_row, write_incoming
+from helpers import (TODAY, community_report_row, count_rows, drop_refusal, dump, query, refuse_inserts,
+                     shelf_check_row, write_incoming)
 
 pytestmark = pytest.mark.issue(11)
 
@@ -83,10 +84,7 @@ def test_rows_are_not_kept_if_the_file_cannot_be_recorded(project, reference_db,
     """The rows and the pipeline_runs record are saved together. If the rows were kept without
     the record (say the pipeline crashed in between), the next run would load the file again."""
     write_incoming(project, "shelf_checks", TODAY, [shelf_check_row()])
-    reference_db.execute(
-        "CREATE TRIGGER fail_to_record BEFORE INSERT ON pipeline_runs"
-        " BEGIN SELECT RAISE(ABORT, 'could not record the file'); END"
-    )
+    refuse_inserts(reference_db, "pipeline_runs")
 
     summary = process_incoming(reference_db, project, TODAY)
 
@@ -97,10 +95,7 @@ def test_rows_are_not_kept_if_the_file_cannot_be_recorded(project, reference_db,
 def test_a_file_that_fails_does_not_stop_the_others_and_is_tried_again(project, reference_db, process_incoming):
     write_incoming(project, "shelf_checks", TODAY, [shelf_check_row()])
     write_incoming(project, "community_reports", TODAY, [community_report_row()])
-    reference_db.execute(
-        "CREATE TRIGGER refuse_reports BEFORE INSERT ON community_reports"
-        " BEGIN SELECT RAISE(ABORT, 'refused'); END"
-    )
+    refuse_inserts(reference_db, "community_reports")
 
     first = process_incoming(reference_db, project, TODAY)
 
@@ -108,7 +103,7 @@ def test_a_file_that_fails_does_not_stop_the_others_and_is_tried_again(project, 
     assert count_rows(reference_db, "shelf_checks") == 1
     assert count_rows(reference_db, "community_reports") == 0
 
-    reference_db.execute("DROP TRIGGER refuse_reports")
+    drop_refusal(reference_db, "community_reports")
     second = process_incoming(reference_db, project, TODAY)
 
     assert second["files_processed"] == 1 and second["files_failed"] == 0

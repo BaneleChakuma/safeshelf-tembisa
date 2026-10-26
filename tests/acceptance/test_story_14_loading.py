@@ -9,6 +9,7 @@ first, then deliveries, then delivery items), so that foreign keys are always sa
 
 from datetime import timedelta
 
+import psycopg
 import pytest
 
 from helpers import (
@@ -61,8 +62,7 @@ def test_files_are_loaded_in_an_order_that_satisfies_every_foreign_key(project, 
 
     assert summary["rows_rejected"] == 0
     assert summary["files_processed"] == len(FILE_TYPES)
-    assert count_rows(reference_db, "delivery_items") == 2
-    assert query(reference_db, "PRAGMA foreign_key_check") == []
+    assert count_rows(reference_db, "delivery_items") == 2  # PostgreSQL refuses any row that points nowhere
 
 
 def test_days_are_loaded_in_date_order(project, reference_db, process_incoming):
@@ -81,9 +81,13 @@ def test_days_are_loaded_in_date_order(project, reference_db, process_incoming):
     assert count_rows(reference_db, "delivery_items") == 1
 
 
-def test_foreign_keys_are_switched_on_while_loading(reference_db, process_incoming):
-    """The pipeline loads through a connection from db.connect(), which switches them on."""
-    assert query(reference_db, "PRAGMA foreign_keys") == [{"foreign_keys": 1}]
+def test_the_database_refuses_a_row_that_points_nowhere(reference_db, process_incoming):
+    """PostgreSQL always checks foreign keys, so a row can never point to a missing store."""
+    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+        reference_db.execute(
+            "INSERT INTO deliveries (delivery_id, store_id, supplier_id, delivered_at)"
+            " VALUES ('D-X', 'ST99', 'SU01', '2026-11-02 07:00:00')"
+        )
 
 
 def test_row_counts_in_the_database_match_the_loaded_counts_in_pipeline_runs(project, reference_db, process_incoming):

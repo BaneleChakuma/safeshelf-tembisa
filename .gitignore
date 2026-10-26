@@ -9,8 +9,6 @@ venv/
 /data/incoming/
 /data/rejected/
 /reports/
-*.db
-*.sqlite
 
 # Editors and OS
 .idea/

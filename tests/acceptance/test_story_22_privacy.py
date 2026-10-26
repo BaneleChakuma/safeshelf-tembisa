@@ -74,16 +74,16 @@ def test_the_pipeline_deletes_truck_locations_older_than_30_days_on_every_run(pr
 
     run_pipeline(project, today=TODAY, days=35, seed=42)
 
-    conn = connect(project / "data" / "safeshelf.db")
+    conn = connect()
     cutoff = f"{TODAY - timedelta(days=30)} 00:00:00"
     old_with_location = query(
         conn,
         "SELECT COUNT(*) AS n FROM trip_events"
-        " WHERE event_time < ? AND (latitude IS NOT NULL OR longitude IS NOT NULL)",
+        " WHERE event_time < %s AND (latitude IS NOT NULL OR longitude IS NOT NULL)",
         (cutoff,),
     )
     recent_with_location = query(
-        conn, "SELECT COUNT(*) AS n FROM trip_events WHERE event_time >= ? AND latitude IS NOT NULL", (cutoff,)
+        conn, "SELECT COUNT(*) AS n FROM trip_events WHERE event_time >= %s AND latitude IS NOT NULL", (cutoff,)
     )
     conn.close()
     assert old_with_location == [{"n": 0}]

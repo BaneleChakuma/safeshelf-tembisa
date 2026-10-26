@@ -1,7 +1,7 @@
 """Unit tests for src/safeshelf/db.py: connecting, building the schema, loading reference data.
 
 Functions these tests expect:
-    connect(path)                          -> sqlite3.Connection with foreign keys switched on  (#4)
+    connect(url=None)                      -> a psycopg connection to the database (#4, #29)
     create_schema(conn)                    runs sql/schema.sql; safe to run again                (#4)
     load_reference_data(conn, folder)      loads the reference CSV files; safe to run again      (#5)
     known_ids(conn)                        the IDs that validation checks rows against           (#12)
@@ -22,19 +22,26 @@ from helpers import (
 )
 
 
-@pytest.mark.issue(4)
-def test_connect_switches_foreign_keys_on(tmp_path):
+@pytest.mark.issue(29)
+def test_connect_opens_the_database_in_settings(database):
     connect = need("safeshelf.db", "connect", issue=4)
-    conn = connect(tmp_path / "test.db")
-    assert query(conn, "PRAGMA foreign_keys") == [{"foreign_keys": 1}]
+    conn = connect()
+    assert query(conn, "SELECT current_schema() AS schema") == [{"schema": database.split("search_path=")[1].strip("'")}]
     conn.close()
 
 
+@pytest.mark.issue(29)
+def test_connect_says_how_to_start_the_database_when_it_is_not_running():
+    connect = need("safeshelf.db", "connect", issue=4)
+    with pytest.raises(Exception, match="docker compose up -d"):
+        connect("postgresql://safeshelf:safeshelf@localhost:1/safeshelf?connect_timeout=2")
+
+
 @pytest.mark.issue(4)
-def test_create_schema_builds_every_table_and_can_run_twice(tmp_path):
+def test_create_schema_builds_every_table_and_can_run_twice(database):
     connect = need("safeshelf.db", "connect", issue=4)
     create_schema = need("safeshelf.db", "create_schema", issue=4)
-    conn = connect(tmp_path / "test.db")
+    conn = connect()
     create_schema(conn)
     create_schema(conn)
     assert set(TABLE_COLUMNS) <= table_names(conn)
@@ -54,8 +61,8 @@ def test_reference_data_is_loaded_from_the_csv_files(reference_db, table, rows_i
 def test_numbers_in_reference_data_are_stored_as_numbers_not_text(reference_db):
     types = query(
         reference_db,
-        "SELECT DISTINCT typeof(shelf_life_days) AS shelf_life, typeof(is_essential) AS essential,"
-        " typeof(needs_cold_storage) AS cold FROM products",
+        "SELECT DISTINCT pg_typeof(shelf_life_days)::text AS shelf_life, pg_typeof(is_essential)::text AS essential,"
+        " pg_typeof(needs_cold_storage)::text AS cold FROM products",
     )
     assert types == [{"shelf_life": "integer", "essential": "integer", "cold": "integer"}]
 

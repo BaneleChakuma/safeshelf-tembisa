@@ -12,13 +12,15 @@ always pass it, so your real folders are never touched. The SQL files always com
 project's sql/ folder.
 """
 
-import sqlite3
+import os
 
+import psycopg
 import pytest
 
 from datetime import date
 
-from helpers import FILE_TYPES, last_number_after, need_command, query, run_command, shelf_check_row, write_incoming
+from helpers import (FILE_TYPES, dump, last_number_after, need_command, query, run_command, shelf_check_row,
+                     table_names, write_incoming)
 
 pytestmark = pytest.mark.issue(23)
 
@@ -37,27 +39,27 @@ def first_run(project):
     return result
 
 
+def open_database():
+    """The test's own database: the one the commands it runs use too (conftest.py)."""
+    return psycopg.connect(os.environ["SAFESHELF_DATABASE_URL"], autocommit=True)
+
+
 def read_database(root, sql):
-    conn = sqlite3.connect(root / "data" / "safeshelf.db")
-    try:
+    with open_database() as conn:
         return query(conn, sql)
-    finally:
-        conn.close()
 
 
 def dump_database(root):
-    conn = sqlite3.connect(root / "data" / "safeshelf.db")
-    try:
-        return "\n".join(conn.iterdump())
-    finally:
-        conn.close()
+    with open_database() as conn:
+        return dump(conn)
 
 
 def contents(root):
     """Everything in the database, leaving out when each file was processed."""
-    tables = read_database(root, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+    with open_database() as conn:
+        tables = sorted(table_names(conn))
     everything = {}
-    for table in (row["name"] for row in tables):
+    for table in tables:
         rows = read_database(root, f"SELECT * FROM {table}")
         for row in rows:
             row.pop("processed_at", None)
@@ -67,7 +69,8 @@ def contents(root):
 
 def test_run_does_every_step_and_writes_the_outputs(project, first_run):
     assert len(list((project / "data" / "incoming").glob("*.csv"))) == 3 * len(FILE_TYPES)
-    assert (project / "data" / "safeshelf.db").exists()
+    with open_database() as conn:
+        assert "shelf_checks" in table_names(conn), "the database tables were created"
     assert list((project / "data" / "rejected").glob("*_rejected.csv"))
     assert (project / "reports" / "daily_2026-11-03.md").exists()
     assert list((project / "reports" / "police").glob("*2026-11-03*"))
@@ -121,10 +124,9 @@ def test_a_failing_step_stops_with_a_clear_message_and_an_error_exit_code(projec
 
 def test_a_file_that_fails_is_reported_and_the_run_ends_with_an_error_exit_code(project, first_run):
     write_incoming(project, "shelf_checks", date(2026, 11, 4), [shelf_check_row(checked_at="2026-11-04 09:00:00")])
-    conn = sqlite3.connect(project / "data" / "safeshelf.db")
-    conn.execute("CREATE TRIGGER refuse_checks BEFORE INSERT ON shelf_checks BEGIN SELECT RAISE(ABORT, 'refused'); END")
-    conn.commit()
-    conn.close()
+    with open_database() as conn:
+        conn.execute("CREATE FUNCTION refuse() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'refused'; END $$")
+        conn.execute("CREATE TRIGGER refuse_checks BEFORE INSERT ON shelf_checks FOR EACH ROW EXECUTE FUNCTION refuse()")
 
     result = run_command("safeshelf", "run", "--today", "2026-11-04", root=project)
 

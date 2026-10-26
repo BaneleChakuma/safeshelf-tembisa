@@ -36,7 +36,7 @@ def test_one_call_runs_every_step(project, run_pipeline):
     run_pipeline(project, today=DAY, days=3, seed=42)
 
     assert len(list((project / "data" / "incoming").glob("*.csv"))) == 3 * len(FILE_TYPES)  # simulate
-    conn = connect(project / "data" / "safeshelf.db")
+    conn = connect()
     for table in FILE_TYPES:  # extract, validate, clean, load
         assert count_rows(conn, table) > 0, f"nothing was loaded into {table}"
     conn.close()
@@ -53,7 +53,7 @@ def test_it_returns_a_short_summary(project, run_pipeline):
     assert summary["files_processed"] == 3 * len(FILE_TYPES)
     assert summary["rows_rejected"] > 0
     assert isinstance(summary["police_alerts"], int)
-    conn = connect(project / "data" / "safeshelf.db")
+    conn = connect()
     assert summary["rows_loaded"] == sum(count_rows(conn, table) for table in FILE_TYPES)
     conn.close()
 
