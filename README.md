@@ -195,6 +195,7 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | `src/safeshelf/` | The pipeline's Python package: extract, validate, clean, load, reports |
 | `tests/` | Unit, acceptance and end-to-end tests — see [the testing guide](docs/TESTING.md) |
 | `setup/` | One-off scripts for setting up the GitHub repo and project board |
+| `scripts/` | `demo.sh`, the live part of the demo |
 
 ## Project docs
 
@@ -205,6 +206,7 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | [Data model](docs/DATA_MODEL.md) | ER diagram, tables, keys and constraints |
 | [Data governance](docs/DATA_GOVERNANCE.md) | Privacy (POPIA): who can see what, and for how long |
 | [Testing](docs/TESTING.md) | How to run the tests, and what each one expects from the code |
+| [Demo](docs/DEMO.md) | The 5-minute demo: outline, what to show, and likely questions |
 
 ## What I learned
 
