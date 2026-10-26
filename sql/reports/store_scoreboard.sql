@@ -1,9 +1,12 @@
 -- Store food-safety scoreboard for the :window_days days up to :as_of. Issue #18.
 -- Audience: the community, so it's built from community_view (counts only, no text).
 --
--- score = 100 - 10 per shelf problem - 5 per verified report - 2 per near-expiry item,
--- never below 0. docs/REPORTS.md explains why. Stores with the same score are ranked by
--- how many checks were done (more checks, more trustworthy), then by name.
+-- score = 100 - 100 * shelf problems / checks done - 5 per verified report
+--             - 2 per near-expiry item, never below 0.
+-- Shelf problems count as a share of the checks, so a store that's checked often isn't punished
+-- for being checked. A store with no shelf checks has no score (NULL) and is listed last: nobody
+-- has looked, so it can't be called safe. docs/REPORTS.md explains why. Stores with the same
+-- score are ranked by how many checks were done (more checks, more trustworthy), then by name.
 
 WITH recent AS (
     SELECT *
@@ -24,10 +27,13 @@ counts AS (
 ),
 scored AS (
     SELECT *,
-           MAX(0, 100 - 10 * shelf_problems - 5 * verified_reports - 2 * near_expiry_items) AS score
+           CASE WHEN checks_done > 0 THEN
+               CAST(ROUND(MAX(0, 100 - 100.0 * shelf_problems / checks_done
+                            - 5 * verified_reports - 2 * near_expiry_items)) AS INTEGER)
+           END AS score
     FROM counts
 )
-SELECT ROW_NUMBER() OVER (ORDER BY score DESC, checks_done DESC, store) AS rank,
+SELECT ROW_NUMBER() OVER (ORDER BY score IS NULL, score DESC, checks_done DESC, store) AS rank,
        store,
        section,
        checks_done,

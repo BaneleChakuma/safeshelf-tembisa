@@ -104,7 +104,9 @@ def _markdown_table(columns: list[str], rows: list[dict]) -> str:
     if not rows:
         return "Nothing to report.\n"
     lines = ["| " + " | ".join(columns) + " |", "|" + " --- |" * len(columns)]
-    lines += ["| " + " | ".join(str(row[column]) for column in columns) + " |" for row in rows]
+    # An empty value (NULL) is shown as a dash, not as Python's "None".
+    lines += ["| " + " | ".join("—" if row[column] is None else str(row[column]) for column in columns) + " |"
+              for row in rows]
     return "\n".join(lines) + "\n"
 
 
@@ -116,7 +118,11 @@ def write_daily_report(conn: sqlite3.Connection, reports_dir: str | Path, as_of:
         ("expired_on_shelf", "Expired or spoiled food on shelves", _expired(conn, as_of)),
         ("essentials_expiring", "Essentials about to expire", _essentials(conn, as_of)),
         ("supplier_near_expiry", "Suppliers delivering near-expiry stock", _suppliers(conn, as_of)),
-        ("store_scoreboard", f"Store scoreboard (last {settings.SCOREBOARD_DAYS} days)", _scoreboard(conn, as_of)),
+        (
+            "store_scoreboard",
+            f"Store scoreboard (last {settings.SCOREBOARD_DAYS} days; — means no shelf checks yet)",
+            _scoreboard(conn, as_of),
+        ),
     ]
 
     checks_done = conn.execute(
