@@ -22,6 +22,7 @@ AUDIENCE = {
     "supplier_near_expiry": "safeshelf_committee",
     "store_scoreboard": "safeshelf_community",
     "police_trip_alerts": "safeshelf_police",
+    "community_problems": "safeshelf_community",
 }
 
 
@@ -135,6 +136,19 @@ def _markdown_table(columns: list[str], rows: list[dict]) -> str:
     lines += ["| " + " | ".join("—" if row[column] is None else str(row[column]) for column in columns) + " |"
               for row in rows]
     return "\n".join(lines) + "\n"
+
+
+def community_problems(conn: psycopg.Connection, as_of: date, days: int | None = None) -> list[dict]:
+    """#27: this week's verified problems, for the community dashboard."""
+    days = settings.PROBLEMS_DAYS if days is None else days
+    return _run(conn, "community_problems", as_of=as_of, days=days)[1]
+
+
+def latest_day(conn: psycopg.Connection) -> date | None:
+    """#27: the most recent day with a finding the community can see, or None if there's none."""
+    with conn.transaction():
+        conn.execute("SET LOCAL ROLE safeshelf_community")
+        return conn.execute("SELECT MAX(found_on) FROM community_view").fetchone()[0]
 
 
 def write_daily_report(conn: psycopg.Connection, reports_dir: str | Path, as_of: date) -> Path:

@@ -137,7 +137,7 @@ Details are in [DATA_GOVERNANCE.md](DATA_GOVERNANCE.md).
 | GitHub Projects | The issue board to plan and track the work |
 | Mermaid | Diagrams in the docs, which GitHub draws automatically |
 
-Stretch: PostgreSQL in Docker (done, #29), a Streamlit dashboard, Google Forms for phone data capture.
+Stretch: PostgreSQL in Docker (done, #29), a Streamlit dashboard (done, #27), Google Forms for phone data capture.
 
 ## 10. Timeline
 

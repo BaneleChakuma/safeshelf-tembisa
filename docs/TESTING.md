@@ -139,6 +139,7 @@ text version, for example `as_of.isoformat()`. Reports return a list of dicts.
 |---|---|---|---|
 | `db.py` | `connect(url=None)` | #4, #29 | A psycopg connection (autocommit) to `settings.database_url()`; says to run `docker compose up -d` if it can't connect |
 | | `drop_everything(conn)` | #14 | Deletes every table and view, for `rebuild` |
+| | `community_connection(url=None)` | #27 | A connection that acts as `safeshelf_community` the whole time, for the dashboard |
 | | `create_schema(conn)` | #4 | Runs `sql/schema.sql`; safe to run twice |
 | | `load_reference_data(conn, folder)` | #5 | Loads the five reference tables from CSV. Safe to run again, and never deletes rows that point to them (use `INSERT ... ON CONFLICT DO UPDATE`) |
 | | `verify_report(conn, report_id)` | #9 | Sets `verified` to 1 |
@@ -161,6 +162,8 @@ text version, for example `as_of.isoformat()`. Reports return a list of dicts.
 | | `store_scoreboard(conn, as_of, window_days=None)` | #18 | Counts and score per store, `rank` 1 = best |
 | | `write_daily_report(conn, reports_dir, as_of)` | #19 | Writes the Markdown file and CSV files, returns the Markdown file's path |
 | | `police_trip_alerts(conn, now, late_minutes=None, stop_minutes=None)` | #20 | `LATE` and `UNEXPECTED_STOP` alerts for trips planned on `now`'s date |
+| | `community_problems(conn, as_of, days=None)` | #27 | This week's verified problems (`day`, `store`, `section`, `problem`, `how_many`), newest first, read as the community |
+| | `latest_day(conn)` | #27 | The most recent day with a finding in `community_view`, or `None` |
 | | `write_police_report(conn, reports_dir, now)` | #20 | Writes a file in `reports_dir/police/`, returns its path |
 | `privacy.py` | `redact_personal_info(text)` | #22 | Phone and ID numbers become `[removed]` |
 | | `apply_retention(conn, today, location_days=None)` | #22 | Removes locations older than the setting (deleting the rows or setting them to NULL both work) |
@@ -250,10 +253,12 @@ tests/
   acceptance/
     conftest.py            the process_incoming and world_db fixtures
     test_story_05_reference_data.py ... test_story_23_one_command.py   one file per user story
+    test_story_27_dashboard.py       #27  the dashboard's data, and the page run without a browser
     test_story_29_postgres_roles.py  #29  each audience's role reads only its own view
   e2e/
     test_e2e_simulate_command.py     python -m safeshelf.simulate
     test_e2e_run_command.py          python -m safeshelf run / rebuild
+    test_e2e_dashboard_command.py    python -m safeshelf dashboard
 ```
 
 These tests were checked on Python 3.10 (Pop!_OS 22.04) and Python 3.13, with PostgreSQL 16.

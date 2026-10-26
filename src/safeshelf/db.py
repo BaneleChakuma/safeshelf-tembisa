@@ -38,6 +38,14 @@ def connect(url: str | None = None) -> psycopg.Connection:
         ) from error
 
 
+def community_connection(url: str | None = None) -> psycopg.Connection:
+    """A connection that acts as safeshelf_community the whole time, for the public dashboard
+    (#27). PostgreSQL then refuses anything the community may not see, whatever the page asks."""
+    conn = connect(url)
+    conn.execute("SET ROLE safeshelf_community")
+    return conn
+
+
 def create_schema(conn: psycopg.Connection) -> None:
     """Create the tables, views and roles in sql/schema.sql. Safe to run on an existing database."""
     conn.execute((SQL_DIR / "schema.sql").read_text(encoding="utf-8"))
