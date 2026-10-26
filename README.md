@@ -2,7 +2,7 @@
 
 **A data pipeline that helps communities keep expired and spoiled food off supermarket shelves, and keeps delivery trucks safe.**
 
-> 🚧 **Status: planning.** See the [project plan](docs/PLAN.md), the [user stories](docs/USER_STORIES.md) and the project board (Projects tab).
+> 🚧 **Status: in progress.** The pipeline runs end to end on simulated data. See the [project plan](docs/PLAN.md), the [user stories](docs/USER_STORIES.md) and the project board (Projects tab).
 
 ## The problem
 
@@ -48,8 +48,30 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-python -m pytest                      # run the tests
+python -m pytest                                    # run the tests
+PYTHONPATH=src python -m safeshelf run --days 30    # simulate 30 days and run every step
 ```
+
+`run` simulates the data, builds the database in `data/safeshelf.db`, loads the files in
+`data/incoming/` (bad rows go to `data/rejected/` with the reason), removes truck locations older
+than 30 days and writes the reports to `reports/`. It ends with a short summary:
+
+```
+Files processed: 180
+Rows loaded:     2600
+Rows rejected:   141
+Police alerts:   0
+```
+
+| Option | What it does |
+|---|---|
+| `--days N` | Simulate N days first, ending on `--today`. Leave it out to process only the files already in `data/incoming/` |
+| `--seed S` | The same seed always gives the same data (default: 42) |
+| `--today YYYY-MM-DD` | The day to report on (default: today) |
+| `--root FOLDER` | The folder that holds `data/` and `reports/` (default: the project folder) |
+
+Running it again only loads new files. To start the database again from every file in
+`data/incoming/`, run `PYTHONPATH=src python -m safeshelf rebuild`.
 
 On Ubuntu or Pop!_OS, if `python3 -m venv` complains, run `sudo apt install python3-venv` first.
 Run `source .venv/bin/activate` again in every new terminal.
@@ -97,6 +119,7 @@ Python 3 · SQLite / SQL · pytest · GitHub Actions · GitHub Projects
 | `data/reference/` | Reference lists the pipeline checks data against: stores, suppliers, products |
 | `data/templates/` | Example CSV files showing the format each input file should follow |
 | `data/incoming/`, `data/rejected/` | Created by the pipeline at runtime (accepted and rejected input files); not committed to Git |
+| `reports/` | Created by the pipeline: the daily report, and the police report in `reports/police/`; not committed to Git |
 | `sql/` | `schema.sql` (the database structure) and `sql/reports/` (the queries behind each report) |
 | `src/safeshelf/` | The pipeline's Python package: extract, validate, clean, load, reports |
 | `tests/` | Unit, acceptance and end-to-end tests — see [the testing guide](docs/TESTING.md) |
