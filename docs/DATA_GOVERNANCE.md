@@ -37,10 +37,11 @@ SQLite doesn't have user accounts, so in this project the "roles" are **SQL view
 | Rule | Where |
 |---|---|
 | Only the template columns are kept: an extra column, such as a name or phone number, is dropped before anything is stored | `clean.py` (`clean_row`) |
-| Phone numbers and ID numbers typed into a community report are replaced with `[removed]` | `privacy.py` (`redact_personal_info`) |
+| Phone numbers and ID numbers typed into a community report are replaced with `[removed]`, in the database and in `data/rejected/` | `privacy.py` (`redact_personal_info`), `pipeline.py` |
 | Committee members are stored by ID, initials and section only, never by name | `sql/schema.sql`, `data/reference/committee_members.csv` |
 | Truck locations are only stored in `trip_events`, and only `police_view` shows them | `sql/schema.sql` |
 | Locations older than `LOCATION_RETENTION_DAYS` (30) are removed on every run; the update stays, without its location | `privacy.py` (`apply_retention`), `settings.py` |
+| Rejected truck updates lose their location after 30 days too, on every run. A rejected row's time is often what's wrong with it, so its age comes from the file's date | `privacy.py` (`apply_retention_to_rejected`) |
 | The daily report has no truck data and no names; police alerts go to their own folder, `reports/police/` | `reports.py` |
 | The scoreboard counts verified findings only | `community_view`, `sql/reports/store_scoreboard.sql` |
 
@@ -51,10 +52,10 @@ Tests check every one of these rules (`tests/acceptance/test_story_21_role_views
 | Stage | Our rules |
 |---|---|
 | **Acquisition** | Collect only the fields in the templates (`data/templates/`). Reports are anonymous. Committee members and drivers are told what's collected and why, and agree to it |
-| **Processing** | Clean and validate; keep rejected records separate with reasons; never guess missing values |
+| **Processing** | Clean and validate; keep rejected records separate with reasons, and with the same privacy rules (no phone or ID numbers, locations removed after 30 days); never guess missing values |
 | **Storage** | One database file, which is never committed to GitHub. Locations live only in `trip_events` |
 | **Sharing** | The community gets the scoreboard only, and the police get trip alerts only. Nothing is shared with third parties |
-| **Retention and disposal** | Locations are removed after 30 days on every run. Other records are kept for 1 year; that clean-up isn't automated yet |
+| **Retention and disposal** | Locations are removed after 30 days on every run, from the database and from rejected files. Other records are kept for 1 year; that clean-up isn't automated yet |
 
 ## Being fair to stores
 

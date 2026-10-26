@@ -12,7 +12,7 @@ from datetime import timedelta
 
 import pytest
 
-from helpers import TODAY, community_report_row, need, query, write_incoming
+from helpers import TODAY, community_report_row, need, query, read_csv, trip_event_row, write_incoming
 
 pytestmark = pytest.mark.issue(22)
 
@@ -30,6 +30,41 @@ def test_community_reports_never_store_a_phone_number_or_id_number(project, refe
     assert "9001015009087" not in stored
     assert stored.startswith("Mouldy bread again."), "keep the rest of the text"
     assert "[removed]" in stored
+
+
+def test_a_rejected_community_report_never_keeps_a_phone_number_or_id_number(project, reference_db, process_incoming):
+    """Rejected rows keep their original values so they can be fixed, but not a phone or ID number."""
+    need("safeshelf.privacy", "redact_personal_info", issue=22)
+
+    description = "Mouldy bread again. Call me on 082 123 4567, my ID is 9001015009087"
+    bad_row = community_report_row(issue_type="LATE", description=description)  # LATE isn't an issue type
+    write_incoming(project, "community_reports", TODAY, [bad_row])
+
+    process_incoming(reference_db, project, TODAY)
+
+    [rejected] = read_csv(project / "data" / "rejected" / f"community_reports_{TODAY}_rejected.csv")
+    assert "082 123 4567" not in rejected["description"]
+    assert "9001015009087" not in rejected["description"]
+    assert rejected["description"].startswith("Mouldy bread again.")
+    assert rejected["issue_type"] == "LATE", "the other values stay as they were sent, so the row can be fixed"
+    assert "issue_type" in rejected["reason"]
+
+
+def test_rejected_truck_updates_lose_their_location_after_30_days_on_every_run(project):
+    run_pipeline = need("safeshelf.pipeline", "run_pipeline", issue=23)
+
+    for days_ago in (31, 1):
+        day = TODAY - timedelta(days=days_ago)
+        bad_row = trip_event_row(event_time=f"{day} 08:00:00", event_type="PARKED")  # not an event type
+        write_incoming(project, "trip_events", day, [bad_row])
+
+    run_pipeline(project, today=TODAY)
+
+    rejected = project / "data" / "rejected"
+    old = read_csv(rejected / f"trip_events_{TODAY - timedelta(days=31)}_rejected.csv")
+    recent = read_csv(rejected / f"trip_events_{TODAY - timedelta(days=1)}_rejected.csv")
+    assert old[0]["latitude"] == old[0]["longitude"] == ""
+    assert recent[0]["latitude"] != "", "locations from the last 30 days are kept"
 
 
 def test_the_pipeline_deletes_truck_locations_older_than_30_days_on_every_run(project):

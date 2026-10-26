@@ -10,7 +10,7 @@ from safeshelf import db, reports, simulate
 from safeshelf.clean import clean_row, load_aliases
 from safeshelf.extract import COLUMNS, find_new_files, parse_file_name, read_rows
 from safeshelf.load import insert_rows
-from safeshelf.privacy import apply_retention
+from safeshelf.privacy import apply_retention, apply_retention_to_rejected, redact_personal_info
 from safeshelf.validate import validate_row
 
 
@@ -19,7 +19,8 @@ def run_pipeline(root: str | Path, today: date, days: int | None = None, seed: i
 
     If `days` is given, it first simulates that many days of data, ending on `today`. Then it
     builds the database, loads the reference data and the new incoming files, removes old truck
-    locations and writes the daily report and the police report.
+    locations (from the database and from the rejected files) and writes the daily report and the
+    police report.
 
     Returns files_processed, files_failed, rows_read, rows_loaded, rows_rejected and police_alerts.
     """
@@ -33,6 +34,7 @@ def run_pipeline(root: str | Path, today: date, days: int | None = None, seed: i
         db.load_reference_data(conn, root / "data" / "reference")
         summary = process_incoming(conn, root, today)
         apply_retention(conn, today)
+        apply_retention_to_rejected(root / "data" / "rejected", today)
 
         # Reporting on today: now. Reporting on an earlier day: the end of that day.
         now = datetime.now() if today == date.today() else datetime.combine(today, time(23, 59, 59))
@@ -90,6 +92,9 @@ def process_file(conn: sqlite3.Connection, path: Path, root: Path, aliases: dict
         reasons = validate_row(file_type, row, known, today)
         if reasons:
             original = {column: raw.get(column, "") for column in COLUMNS[file_type]}
+            # The original values are kept so the row can be fixed, but never a phone or ID number.
+            if original.get("description"):
+                original["description"] = redact_personal_info(original["description"])
             rejected.append({**original, "reason": "; ".join(reasons)})
             continue
         good.append(row)
@@ -114,7 +119,9 @@ def process_file(conn: sqlite3.Connection, path: Path, root: Path, aliases: dict
 
 
 def write_rejected(path: Path, file_type: str, rows: list[dict]) -> None:
-    """Save the bad rows with their original values, so someone can fix them and send them again."""
+    """Save the bad rows with their original values, so someone can fix them and send them again.
+    Phone and ID numbers are already removed, and old truck locations are removed later
+    (privacy.apply_retention_to_rejected)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(file, fieldnames=[*COLUMNS[file_type], "reason"])
