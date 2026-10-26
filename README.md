@@ -27,17 +27,45 @@ A data pipeline checks and cleans this data, loads it into a SQL database and pr
 - a store scoreboard
 - a separate police-only report of delayed trucks and unexpected stops
 
+## Architecture
+
 ```mermaid
 flowchart LR
-    A["Deliveries"] --> P["Pipeline: extract, validate, clean, load"]
-    B["Shelf checks"] --> P
-    C["Community reports"] --> P
-    D["Truck trip updates"] --> P
-    P --> DB[("SQLite database")]
-    DB --> R1["Daily community report"]
-    DB --> R2["Store report"]
-    DB --> R3["Police report"]
+    subgraph Sources["Daily CSV files (simulated)"]
+        A["Deliveries"]
+        B["Shelf checks"]
+        C["Community reports"]
+        D["Truck trip updates"]
+    end
+    Sources --> E["Extract<br/>new files only"]
+    E --> F["Clean<br/>names, dates, product aliases,<br/>phone numbers removed"]
+    F --> G["Validate<br/>data quality rules"]
+    G -- "bad rows, with the reason" --> R["data/rejected/"]
+    G --> L["Load<br/>one transaction per file"]
+    L --> DB[("SQLite<br/>+ pipeline_runs")]
+    DB --> V1["committee_view"]
+    DB --> V2["store_view"]
+    DB --> V3["community_view"]
+    DB --> V4["police_view"]
+    V1 --> DR["Daily report<br/>reports/"]
+    V2 --> DR
+    V3 --> DR
+    V4 --> PR["Police report<br/>reports/police/"]
 ```
+
+- **Extract** picks up only files that aren't in the `pipeline_runs` table yet, so running it
+  twice never loads anything twice.
+- **Clean** writes every value the same way: dates as `YYYY-MM-DD`, product aliases like
+  "BREAD WHITE" become one product ID. It also removes phone and ID numbers from community reports.
+- **Validate** checks each row against the [data quality rules](docs/PLAN.md#data-quality-rules).
+  Bad rows go to `data/rejected/` with the reason, so they can be fixed and sent again.
+- **Load** saves a file's rows and its `pipeline_runs` record in one transaction, so either both
+  are saved or neither is.
+- **Report**: each report reads from a view made for its audience, so it can only use what that
+  audience may see. Truck locations exist only in `police_view`, and they're removed after 30 days.
+
+The tables, keys and relationships are in the **[ER diagram (docs/DATA_MODEL.md)](docs/DATA_MODEL.md)**,
+and who can see what is in [DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md).
 
 ## How to run
 
