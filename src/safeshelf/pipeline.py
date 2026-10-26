@@ -1,15 +1,46 @@
-"""The pipeline: extract -> clean -> validate -> load. Issues #11 to #14."""
+"""The pipeline: simulate -> extract -> clean -> validate -> load -> report. Issues #11 to #14 and #23."""
 
 import csv
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
-from safeshelf import db
+from safeshelf import db, reports, simulate
 from safeshelf.clean import clean_row, load_aliases
 from safeshelf.extract import COLUMNS, find_new_files, parse_file_name, read_rows
 from safeshelf.load import load_rows
+from safeshelf.privacy import apply_retention
 from safeshelf.validate import validate_row
+
+
+def run_pipeline(root: str | Path, today: date, days: int | None = None, seed: int = 42) -> dict[str, int]:
+    """Run every step for `today`. Issue #23.
+
+    If `days` is given, it first simulates that many days of data, ending on `today`. Then it
+    builds the database, loads the reference data and the new incoming files, removes old truck
+    locations and writes the daily report and the police report.
+
+    Returns files_processed, rows_read, rows_loaded, rows_rejected and police_alerts.
+    """
+    root = Path(root)
+    if days is not None:
+        simulate.generate(root, days=days, seed=seed, start=today - timedelta(days=days - 1))
+
+    conn = db.connect(root / "data" / "safeshelf.db")
+    try:
+        db.create_schema(conn)
+        db.load_reference_data(conn, root / "data" / "reference")
+        summary = process_incoming(conn, root, today)
+        apply_retention(conn, today)
+
+        # Reporting on today: now. Reporting on an earlier day: the end of that day.
+        now = datetime.now() if today == date.today() else datetime.combine(today, time(23, 59, 59))
+        reports.write_daily_report(conn, root / "reports", today)
+        reports.write_police_report(conn, root / "reports", now)
+        summary["police_alerts"] = len(reports.police_trip_alerts(conn, now))
+    finally:
+        conn.close()
+    return summary
 
 
 def process_incoming(conn: sqlite3.Connection, root: str | Path, today: date) -> dict[str, int]:
