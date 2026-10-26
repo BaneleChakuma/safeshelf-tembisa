@@ -37,19 +37,28 @@ The store and product options come from `data/reference/stores.csv` and
 - **Settings → Responses → Allow response editing: off**, so a check can't be changed after it's sent.
 - Share the Form's link only with committee members.
 
-## 3. Send the link to committee members
+## 3. Publish it and send the link to committee members
 
-Press **Send**, choose the link tab, tick **Shorten URL** and share it. On a phone, the Form opens
-in the browser, and adding it to the home screen makes it one tap away.
+A Form doesn't take responses until it's published. Press **Publish** at the top right. If it asks
+who can respond, choose **Anyone with the link**, and confirm. Then press the **🔗** icon next to
+it and copy the responder link. Share it with committee members, for example on WhatsApp. On a
+phone, the Form opens in the browser, and adding it to the home screen makes it one tap away.
+
+Before sharing it, open the Form's **Preview** (the 👁 icon) and check that `0` in "How many are on
+the shelf?" and a name in "Your committee member ID" are both refused.
+
+The name of the downloaded file comes from the Form's name in Google Drive, at the very top left
+("Untitled form" until you change it), not from the title inside the Form.
 
 ## 4. Import the responses
 
-1. In the Form, open **Responses**, press **⋮** and choose **Download responses (.csv)**. Google
-   downloads a zip file: unzip it to get the CSV file.
+1. In the Form, open **Responses**, press the **⋮** next to the responses (not the one at the top
+   of the page) and choose **Download responses (.csv)**. Google downloads a zip file, such as
+   `SafeShelf shelf check.csv.zip`. There's no need to unzip it.
 2. Import it:
 
    ```bash
-   PYTHONPATH=src python -m safeshelf import-form ~/Downloads/"SafeShelf shelf check (Responses).csv"
+   PYTHONPATH=src python -m safeshelf import-form ~/Downloads/"SafeShelf shelf check.csv.zip"
    ```
 
    It writes the new responses to `data/incoming/shelf_checks_<today>_form.csv` and says how many
@@ -64,11 +73,15 @@ A response that breaks a rule, such as an unknown member ID, goes to `data/rejec
 reason, like any other row.
 
 If the import says a question is missing, check that the Form's question titles match the table
-above exactly.
+above. Capitals and spelling must match. Spaces around a title don't matter, and neither does text
+on a second line of the title (if a description was typed into the title by mistake), but it's
+neater to put descriptions in the description box (**⋮ → Description**).
 
-**Check the dates on your first import.** Open the CSV file and look at the Expiry date column.
-SafeShelf reads `2026/11/05` (year first) and `05/11/2026` (day first) correctly. Google writes
-dates the way your account's language and region say. If yours are month first, like
-`11/5/2026`, SafeShelf would read that as 11 May. In that case, set your Google account's region
-to South Africa, or export from a linked Google Sheet with its locale set to **South Africa**
-(**File → Settings → Locale**).
+**Times.** Google writes each response's time in the time zone of the Google account that owns the
+Form, for example `2026/10/26 4:41:47 PM GMT+3`. The import turns every time into South African
+time (GMT+2), so that one is recorded as 15:41.
+
+**Dates.** The Form's own download writes the Expiry date year first, like `2026-10-24`, which
+SafeShelf reads correctly (checked with a real download). If you ever export from a linked Google
+Sheet instead, set the Sheet's locale to **South Africa** first (**File → Settings → Locale**), so
+dates aren't written month first.

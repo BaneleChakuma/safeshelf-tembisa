@@ -1,8 +1,9 @@
 """Unit tests for src/safeshelf/forms.py: reading a Google Form's response export (issue #28).
 
 Functions these tests expect:
-    form_timestamp(text)   a Form's "Timestamp" -> "YYYY-MM-DD HH:MM:SS", or the text as it was
-                           if it can't be read (so validation rejects the row and says why)
+    form_timestamp(text)   a Form's "Timestamp" -> "YYYY-MM-DD HH:MM:SS" in South African time
+                           (GMT+2), or the text as it was if it can't be read (so validation
+                           rejects the row and says why)
     store_id(text)         the dropdown's "ST01 Amandla Superette" -> "ST01"
 """
 
@@ -25,6 +26,22 @@ pytestmark = pytest.mark.issue(28)
     ],
 )
 def test_form_timestamps_are_read(text, expected):
+    form_timestamp = need("safeshelf.forms", "form_timestamp", issue=28)
+    assert form_timestamp(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("2026/10/26 4:41:47 PM GMT+3", "2026-10-26 15:41:47"),   # a Google account set to GMT+3
+        ("2026/10/26 2:00:00 PM GMT+0", "2026-10-26 16:00:00"),
+        ("2026/10/26 9:00:00 AM GMT-5", "2026-10-26 16:00:00"),
+        ("2026/10/26 8:00:00 PM GMT+5:30", "2026-10-26 16:30:00"),
+        ("2026/10/27 12:30:00 AM GMT+3", "2026-10-26 23:30:00"),  # the day changes too
+    ],
+)
+def test_other_time_zones_become_south_african_time(text, expected):
+    """Otherwise a check sent late at night could be dated tomorrow, and rejected as in the future."""
     form_timestamp = need("safeshelf.forms", "form_timestamp", issue=28)
     assert form_timestamp(text) == expected
 

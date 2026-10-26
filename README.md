@@ -189,11 +189,12 @@ Committee members can also send shelf checks from their phone with a Google Form
 Form's responses as a CSV file and import them, then run the pipeline as usual:
 
 ```bash
-PYTHONPATH=src python -m safeshelf import-form ~/Downloads/"SafeShelf shelf check (Responses).csv"
+PYTHONPATH=src python -m safeshelf import-form ~/Downloads/"SafeShelf shelf check.csv.zip"
 PYTHONPATH=src python -m safeshelf run
 ```
 
-The import only copies responses it hasn't imported before, and never copies email addresses.
+The import reads Google's zip file as it is, turns every time into South African time, only copies
+responses it hasn't imported before, and never copies email addresses.
 How to set up the Form, question by question, is in [GOOGLE_FORM.md](docs/GOOGLE_FORM.md).
 
 ## Community dashboard

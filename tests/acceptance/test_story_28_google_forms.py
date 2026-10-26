@@ -18,7 +18,10 @@ Checked by hand: the Form itself exists, with the questions in docs/GOOGLE_FORM.
 
 import pytest
 
-from helpers import TODAY, need, query, read_csv, read_header, write_csv
+import zipfile
+from datetime import date
+
+from helpers import PROJECT_DIR, TODAY, need, query, read_csv, read_header, write_csv
 
 pytestmark = pytest.mark.issue(28)
 
@@ -114,6 +117,47 @@ def test_importing_the_export_again_adds_only_the_new_responses(project, export,
 
     again = import_form_responses(export([first, later]), project, TODAY)
     assert again["file"] is None and again["new"] == 0, "nothing new: no file is written"
+
+
+def test_a_real_export_from_the_form_is_imported(project, reference_db, process_incoming, import_form_responses):
+    """A real download (tests/fixtures/google_form_export.csv): GMT+3 times, descriptions inside
+    some question titles and spaces in front of others."""
+    day = date(2026, 10, 26)
+    result = import_form_responses(PROJECT_DIR / "tests" / "fixtures" / "google_form_export.csv", project, day)
+
+    [check] = read_csv(result["file"])
+    assert check == {"store_id": "ST01", "product": "White Bread 700g", "batch_code": "B1026-101",
+                     "expiry_date": "2026-10-24", "quantity_on_shelf": "6", "condition": "Expired",
+                     "checked_at": "2026-10-26 15:41:47", "member_id": "CM01", "photo_ref": ""}
+    assert result["dropped"] == []
+
+    process_incoming(reference_db, project, day)
+    assert query(reference_db, "SELECT condition, checked_at FROM shelf_checks") == [
+        {"condition": "EXPIRED", "checked_at": "2026-10-26 15:41:47"}
+    ]
+
+
+def test_the_zip_file_google_downloads_can_be_imported_as_it_is(project, tmp_path, import_form_responses):
+    """Google downloads the responses as a .zip with the CSV file inside: no need to unzip it."""
+    download = tmp_path / "SafeShelf shelf check.csv.zip"
+    with zipfile.ZipFile(download, "w") as archive:
+        archive.write(PROJECT_DIR / "tests" / "fixtures" / "google_form_export.csv", "SafeShelf shelf check.csv")
+
+    result = import_form_responses(download, project, date(2026, 10, 26))
+
+    assert result["new"] == 1
+
+
+def test_question_titles_are_matched_on_their_first_line_without_extra_spaces(project, export, import_form_responses):
+    row = response()
+    row["  Batch number\n\nThe batch number printed on the packaging "] = row.pop("Batch number")
+    row["Condition\n\nMultiple choice\n"] = row.pop("Condition")
+
+    result = import_form_responses(export([row]), project, TODAY)
+
+    [check] = read_csv(result["file"])
+    assert (check["batch_code"], check["condition"]) == ("B-500", "Damaged packaging")
+    assert result["dropped"] == []
 
 
 def test_an_export_missing_one_of_the_questions_is_refused(project, export, import_form_responses):
