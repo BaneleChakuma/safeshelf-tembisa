@@ -9,6 +9,8 @@ the README, and waits for Enter between steps.
 - [ ] `docker compose up -d`, then `docker compose ps` says the database is `healthy`
 - [ ] `source .venv/bin/activate`, then `python -m pytest -q`: all tests pass
 - [ ] Rehearse once: `bash scripts/demo.sh --no-pause` (it takes a few seconds)
+- [ ] Start the dashboard in a second terminal with the command the demo script prints at the end,
+      and open it in a browser tab, ready for step 5
 - [ ] Make the terminal font big, and the window wide enough for the scoreboard table
 - [ ] Open three browser tabs: the README on GitHub (for the diagram), the project board, and the
       Actions tab with a green *Pipeline* run
@@ -60,7 +62,9 @@ Point along the diagram, left to right:
    the committee's list for tomorrow."
 5. **Scoreboard.** "Shelf problems count as a share of the checks, so a store that's checked often
    isn't punished for it. The four stores at the bottom have never been checked: they have no
-   score, because nobody can say they're safe."
+   score, because nobody can say they're safe." Switch to the browser: "Residents don't have to
+   read files. The dashboard shows the same scoreboard, and this week's verified problems." Pick
+   an earlier day on the left to show it changing.
 6. **Police only.** "One truck is late. Its location is only in the police report, in its own
    folder. Every report runs as its audience's database role: here the community's role reads
    its own view, then tries to read the truck locations, and PostgreSQL refuses. So a community
@@ -71,8 +75,8 @@ Point along the diagram, left to right:
 - Pick two or three points from *What I learned* in the README, in your own words.
 - Show the Actions tab: "The tests run on every push, and the pipeline runs every morning at 06:00."
 - Show the board: "Every story was an issue on the board, in iterations."
-- Next: a Streamlit dashboard for residents, shelf checks captured on a phone, and a pilot with
-  one committee and one store.
+- Next: shelf checks captured on a phone, putting the dashboard online, and a pilot with one
+  committee and one store.
 
 ## Questions you might get
 
