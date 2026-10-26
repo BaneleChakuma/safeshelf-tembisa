@@ -2,13 +2,14 @@
 
 import csv
 import sqlite3
+import sys
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 from safeshelf import db, reports, simulate
 from safeshelf.clean import clean_row, load_aliases
 from safeshelf.extract import COLUMNS, find_new_files, parse_file_name, read_rows
-from safeshelf.load import load_rows
+from safeshelf.load import insert_rows
 from safeshelf.privacy import apply_retention
 from safeshelf.validate import validate_row
 
@@ -20,7 +21,7 @@ def run_pipeline(root: str | Path, today: date, days: int | None = None, seed: i
     builds the database, loads the reference data and the new incoming files, removes old truck
     locations and writes the daily report and the police report.
 
-    Returns files_processed, rows_read, rows_loaded, rows_rejected and police_alerts.
+    Returns files_processed, files_failed, rows_read, rows_loaded, rows_rejected and police_alerts.
     """
     root = Path(root)
     if days is not None:
@@ -48,14 +49,23 @@ def process_incoming(conn: sqlite3.Connection, root: str | Path, today: date) ->
 
     Bad rows go to <root>/data/rejected/<file>_rejected.csv with the reason. Each file is
     recorded in pipeline_runs, so it's never loaded twice.
+
+    If a whole file fails (for example the database refuses it), nothing from it is kept, it's
+    counted in files_failed and the other files are still loaded. It isn't recorded in
+    pipeline_runs, so the next run tries it again.
     """
     root = Path(root)
     aliases = load_aliases(root / "data" / "reference")
     processed = {row[0] for row in conn.execute("SELECT file_name FROM pipeline_runs")}
-    summary = {"files_processed": 0, "rows_read": 0, "rows_loaded": 0, "rows_rejected": 0}
+    summary = {"files_processed": 0, "files_failed": 0, "rows_read": 0, "rows_loaded": 0, "rows_rejected": 0}
 
     for path in find_new_files(root / "data" / "incoming", processed):
-        rows_read, rows_loaded, rows_rejected = process_file(conn, path, root, aliases, today)
+        try:
+            rows_read, rows_loaded, rows_rejected = process_file(conn, path, root, aliases, today)
+        except (OSError, sqlite3.Error, ValueError) as error:
+            print(f"{path.name}: failed, will try again next run: {error}", file=sys.stderr)
+            summary["files_failed"] += 1
+            continue
         print(f"{path.name}: {rows_loaded} loaded, {rows_rejected} rejected")
         summary["files_processed"] += 1
         summary["rows_read"] += rows_read
@@ -89,10 +99,12 @@ def process_file(conn: sqlite3.Connection, path: Path, root: Path, aliases: dict
         elif file_type == "deliveries":
             known["deliveries"].add(row["delivery_id"])
 
-    rows_loaded = load_rows(conn, file_type, good)
     if rejected:
         write_rejected(root / "data" / "rejected" / f"{path.stem}_rejected.csv", file_type, rejected)
+    # The rows and the pipeline_runs record are saved in one transaction: both or neither. If the
+    # rows were saved without the record, the next run would load the file again.
     with conn:
+        rows_loaded = insert_rows(conn, file_type, good)
         conn.execute(
             "INSERT INTO pipeline_runs (file_name, processed_at, rows_read, rows_loaded, rows_rejected)"
             " VALUES (?, ?, ?, ?, ?)",

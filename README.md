@@ -60,6 +60,7 @@ than 30 days and writes the reports to `reports/`. It ends with a short summary:
 
 ```
 Files processed: 180
+Files failed:    0
 Rows loaded:     2600
 Rows rejected:   141
 Police alerts:   0
@@ -72,7 +73,8 @@ Police alerts:   0
 | `--today YYYY-MM-DD` | The day to report on (default: today) |
 | `--root FOLDER` | The folder that holds `data/` and `reports/` (default: the project folder) |
 
-Running it again only loads new files. To start the database again from every file in
+If a whole file can't be loaded, nothing from it is kept, the other files still load, the run
+ends with exit code 1 and the next run tries that file again. Running it again only loads new files. To start the database again from every file in
 `data/incoming/`, run `PYTHONPATH=src python -m safeshelf rebuild`.
 
 ## Automation

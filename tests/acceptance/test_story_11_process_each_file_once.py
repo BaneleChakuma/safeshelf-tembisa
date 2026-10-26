@@ -11,7 +11,7 @@ from datetime import timedelta
 
 import pytest
 
-from helpers import TODAY, count_rows, dump, query, shelf_check_row, write_incoming
+from helpers import TODAY, community_report_row, count_rows, dump, query, shelf_check_row, write_incoming
 
 pytestmark = pytest.mark.issue(11)
 
@@ -77,3 +77,39 @@ def test_a_new_file_is_picked_up_on_the_next_run(project, reference_db, process_
         "shelf_checks_2026-11-01.csv",
         "shelf_checks_2026-11-02.csv",
     ]
+
+
+def test_rows_are_not_kept_if_the_file_cannot_be_recorded(project, reference_db, process_incoming):
+    """The rows and the pipeline_runs record are saved together. If the rows were kept without
+    the record (say the pipeline crashed in between), the next run would load the file again."""
+    write_incoming(project, "shelf_checks", TODAY, [shelf_check_row()])
+    reference_db.execute(
+        "CREATE TRIGGER fail_to_record BEFORE INSERT ON pipeline_runs"
+        " BEGIN SELECT RAISE(ABORT, 'could not record the file'); END"
+    )
+
+    summary = process_incoming(reference_db, project, TODAY)
+
+    assert summary["files_failed"] == 1
+    assert count_rows(reference_db, "shelf_checks") == 0
+
+
+def test_a_file_that_fails_does_not_stop_the_others_and_is_tried_again(project, reference_db, process_incoming):
+    write_incoming(project, "shelf_checks", TODAY, [shelf_check_row()])
+    write_incoming(project, "community_reports", TODAY, [community_report_row()])
+    reference_db.execute(
+        "CREATE TRIGGER refuse_reports BEFORE INSERT ON community_reports"
+        " BEGIN SELECT RAISE(ABORT, 'refused'); END"
+    )
+
+    first = process_incoming(reference_db, project, TODAY)
+
+    assert first["files_processed"] == 1 and first["files_failed"] == 1
+    assert count_rows(reference_db, "shelf_checks") == 1
+    assert count_rows(reference_db, "community_reports") == 0
+
+    reference_db.execute("DROP TRIGGER refuse_reports")
+    second = process_incoming(reference_db, project, TODAY)
+
+    assert second["files_processed"] == 1 and second["files_failed"] == 0
+    assert count_rows(reference_db, "community_reports") == 1

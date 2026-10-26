@@ -60,15 +60,20 @@ MAPPING = {
 }
 
 
-def load_rows(conn: sqlite3.Connection, file_type: str, rows: list[dict[str, str]]) -> int:
-    """Insert the rows of one file. They all go in, or none do. Returns how many went in."""
+def insert_rows(conn: sqlite3.Connection, file_type: str, rows: list[dict[str, str]]) -> int:
+    """Insert the rows of one file without committing, so the caller can save other changes in
+    the same transaction. Returns how many went in."""
     mapping = MAPPING[file_type]
     columns = ", ".join(table_column for table_column, _, _ in mapping)
     placeholders = ", ".join("?" for _ in mapping)
     values = [[convert(row[incoming]) for _, incoming, convert in mapping] for row in rows]
+    conn.executemany(f"INSERT INTO {file_type} ({columns}) VALUES ({placeholders})", values)
+    return len(values)
 
+
+def load_rows(conn: sqlite3.Connection, file_type: str, rows: list[dict[str, str]]) -> int:
+    """Insert the rows of one file. They all go in, or none do. Returns how many went in."""
     # `with conn` is one transaction: it commits if every insert works, and undoes them all if
     # one fails (the error is passed on, so the pipeline knows the file failed).
     with conn:
-        conn.executemany(f"INSERT INTO {file_type} ({columns}) VALUES ({placeholders})", values)
-    return len(values)
+        return insert_rows(conn, file_type, rows)
