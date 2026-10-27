@@ -206,8 +206,12 @@ How to set up the Form, question by question, is in [GOOGLE_FORM.md](docs/GOOGLE
 ## Community dashboard
 
 Residents can see the store scoreboard, how each store's score has moved over the last two weeks,
-and this week's verified problems, on a web page instead of reading report files. Start it with
-one command:
+and this week's verified problems, on a web page instead of reading report files.
+
+**Live demo: [safeshelf-tembisa-cvbemfakjjc628bnvh8pmo.streamlit.app](https://safeshelf-tembisa-cvbemfakjjc628bnvh8pmo.streamlit.app/)** (simulated data, updated from `main`).
+It may take a few seconds to wake up if nobody has opened it for a while.
+
+To run it on your own computer, start it with one command:
 
 ```bash
 PYTHONPATH=src python -m safeshelf dashboard
@@ -260,12 +264,17 @@ The hosted database holds the police data too, which is allowed for simulated da
 [Streamlit Community Cloud](https://streamlit.io/cloud) runs the dashboard for free, from GitHub:
 
 1. Sign in with GitHub and choose **Create app**, then this repository, the `main` branch and the
-   file `streamlit_app.py`. Under **Advanced settings**, pick Python 3.12.
+   file `streamlit_app.py`. Under **Advanced settings**, pick Python 3.12: the pinned packages
+   don't install on the newest Python. It can only be chosen when the app is created, so a wrong
+   version means deleting the app and deploying it again.
 2. Under **Secrets**, add the dashboard login's address (not the pipeline's):
 
    ```toml
    SAFESHELF_DATABASE_URL = "postgresql://dashboard:its-password@host/dbname?sslmode=require"
    ```
+
+   Use the database's direct address, not the pooled one (Neon's has `-pooler` in its host): the
+   dashboard switches to the community role once per connection, and a pooler can lose that.
 
 3. Choose **Deploy**. Every merge to `main` updates the live page by itself.
 
@@ -384,7 +393,7 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · G
 ## Next steps
 
 - **Shelf checks captured on a phone** with Google Forms, instead of CSV files ([#28](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/28))
-- **Putting the dashboard online**, so residents can open it on their phones, not only on this computer
+- **Fresh data online every day**: the daily GitHub Actions run loading into the hosted database ([#68](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/68))
 - **Real data**: a pilot with one committee and one store, to see how the rules and scores hold up
 
 ## About the data
