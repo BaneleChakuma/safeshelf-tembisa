@@ -255,6 +255,23 @@ hosting service's secrets, never in the repository.
 The hosted database holds the police data too, which is allowed for simulated data only:
 [DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md#hosting-the-database-online) explains why.
 
+### Putting the dashboard online
+
+[Streamlit Community Cloud](https://streamlit.io/cloud) runs the dashboard for free, from GitHub:
+
+1. Sign in with GitHub and choose **Create app**, then this repository, the `main` branch and the
+   file `streamlit_app.py`. Under **Advanced settings**, pick Python 3.12.
+2. Under **Secrets**, add the dashboard login's address (not the pipeline's):
+
+   ```toml
+   SAFESHELF_DATABASE_URL = "postgresql://dashboard:its-password@host/dbname?sslmode=require"
+   ```
+
+3. Choose **Deploy**. Every merge to `main` updates the live page by itself.
+
+The page says that its data is simulated. If it can't reach the database, it says so without
+showing the database's address.
+
 The tests can run against a hosted-style server too: set `SAFESHELF_TEST_DATABASE_URL` to a
 spare database (not the live one) whose user isn't a superuser. That's how hosted databases work, and PostgreSQL treats
 roles a little differently for them.
@@ -332,6 +349,7 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · G
 | `sql/` | `schema.sql` (the tables, views and roles) and `sql/reports/` (the queries behind each report) |
 | `docker-compose.yml` | Starts the PostgreSQL database in Docker |
 | `src/safeshelf/` | The pipeline's Python package: extract, validate, clean, load, reports |
+| `streamlit_app.py` | Starts the dashboard on Streamlit Community Cloud |
 | `tests/` | Unit, acceptance and end-to-end tests — see [the testing guide](docs/TESTING.md) |
 | `setup/` | One-off scripts for setting up the GitHub repo and project board |
 
