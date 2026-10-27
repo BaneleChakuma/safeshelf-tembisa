@@ -1,15 +1,18 @@
 """The community dashboard: the store scoreboard, its trend, and this week's problems on a web
-page. Issues #27 and #30.
+page. Issues #27, #30 and #67.
 
-Start it with `python -m safeshelf dashboard` (it runs `streamlit run` on this file).
+Start it with `python -m safeshelf dashboard` (it runs `streamlit run` on this file). Online,
+Streamlit Community Cloud starts it through streamlit_app.py.
 
 The page connects as the safeshelf_community role for the whole time (db.community_connection),
 so PostgreSQL refuses anything the community may not see: no truck data, no names, no report text.
 """
 
+import sys
 from datetime import date
 
 import pandas as pd
+import psycopg
 import streamlit as st
 
 from safeshelf import db, reports, settings
@@ -23,13 +26,22 @@ def connection(url: str):
     return db.community_connection(url)
 
 
-conn = connection(settings.database_url())
-if conn.broken or conn.closed:  # the database restarted: connect again
-    connection.clear()
-    conn = connection(settings.database_url())
-
 st.title("SafeShelf Tembisa")
 st.markdown("Where food is checked and safe. Only findings a committee member checked are counted.")
+# #67: online, anyone can open the page, so nobody may take these made-up scores for real ones.
+st.warning("This is a demo with simulated data. The stores, checks and scores are made up and say "
+           "nothing about real shops.")
+
+try:
+    conn = connection(settings.database_url())
+    if conn.broken or conn.closed:  # the database restarted: connect again
+        connection.clear()
+        conn = connection(settings.database_url())
+except psycopg.OperationalError as error:
+    # The error names the database's address, so it goes to the server's log, not the public page.
+    print(f"The dashboard can't reach the database: {error}", file=sys.stderr)
+    st.error("The dashboard can't reach its database right now. Please try again in a few minutes.")
+    st.stop()
 
 latest = reports.latest_day(conn)
 if latest is None:
