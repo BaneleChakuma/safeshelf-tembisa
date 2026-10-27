@@ -79,8 +79,9 @@ def test_the_page_works_through_the_dashboard_login(world_db, database, monkeypa
 def test_a_page_that_cannot_reach_the_database_says_so_without_the_password(monkeypatch):
     entry = need_file(ENTRY, issue=67)
     password = uuid.uuid4().hex
-    monkeypatch.setenv("SAFESHELF_DATABASE_URL",
-                       f"postgresql://dashboard:{password}@localhost:1/safeshelf?connect_timeout=2")
+    monkeypatch.setenv("SAFESHELF_DATABASE_URL", make_conninfo(host="localhost", port=1, dbname="safeshelf",
+                                                               user="dashboard", password=password,
+                                                               connect_timeout=2))
 
     app = run_page(entry)
 
