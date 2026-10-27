@@ -31,6 +31,9 @@ SCOREBOARD_DAYS = 30
 # Issue #27: the community dashboard lists the verified problems of this many days.
 PROBLEMS_DAYS = 7
 
+# Issue #30: the community dashboard's score trend chart covers this many days.
+TREND_DAYS = 14
+
 # Issue #20: a truck is late this many minutes after its planned arrival time...
 LATE_MINUTES = 30
 # ...and a stop longer than this, without a delivery, is an alert.

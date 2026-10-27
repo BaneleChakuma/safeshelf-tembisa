@@ -6,7 +6,7 @@ refuses anything else (#29). docs/REPORTS.md explains every report.
 """
 
 import csv
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -142,6 +142,18 @@ def community_problems(conn: psycopg.Connection, as_of: date, days: int | None =
     """#27: this week's verified problems, for the community dashboard."""
     days = settings.PROBLEMS_DAYS if days is None else days
     return _run(conn, "community_problems", as_of=as_of, days=days)[1]
+
+
+def score_trend(conn: psycopg.Connection, as_of: date, days: int | None = None) -> list[dict]:
+    """#30: each store's score on every one of the last `days` days, for the dashboard's trend
+    chart. Reuses store_scoreboard (#18), so it's still safeshelf_community's rolling
+    settings.SCOREBOARD_DAYS-day score, just recomputed as of each day instead of only the latest."""
+    days = settings.TREND_DAYS if days is None else days
+    return [
+        {"day": as_text(as_of - timedelta(days=offset)), "store": row["store"], "score": row["score"]}
+        for offset in range(days - 1, -1, -1)
+        for row in store_scoreboard(conn, as_of - timedelta(days=offset))
+    ]
 
 
 def latest_day(conn: psycopg.Connection) -> date | None:
