@@ -199,8 +199,9 @@ How to set up the Form, question by question, is in [GOOGLE_FORM.md](docs/GOOGLE
 
 ## Community dashboard
 
-Residents can see the store scoreboard and this week's verified problems on a web page, instead
-of reading report files. Start it with one command:
+Residents can see the store scoreboard, how each store's score has moved over the last two weeks,
+and this week's verified problems, on a web page instead of reading report files. Start it with
+one command:
 
 ```bash
 PYTHONPATH=src python -m safeshelf dashboard

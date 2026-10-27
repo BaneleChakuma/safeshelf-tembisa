@@ -1,4 +1,5 @@
-"""The community dashboard: the store scoreboard and this week's problems on a web page. Issue #27.
+"""The community dashboard: the store scoreboard, its trend, and this week's problems on a web
+page. Issues #27 and #30.
 
 Start it with `python -m safeshelf dashboard` (it runs `streamlit run` on this file).
 
@@ -8,6 +9,7 @@ so PostgreSQL refuses anything the community may not see: no truck data, no name
 
 from datetime import date
 
+import pandas as pd
 import streamlit as st
 
 from safeshelf import db, reports, settings
@@ -52,6 +54,16 @@ st.dataframe(
 )
 st.caption("A store without a score hasn't been checked yet, so nobody can say it's safe. "
            "How the score works: docs/REPORTS.md.")
+
+st.header("Score trend")
+st.markdown(f"Each store's {settings.SCOREBOARD_DAYS}-day score, on every one of the "
+            f"{settings.TREND_DAYS} days up to **{day}**.")
+trend = pd.DataFrame(reports.score_trend(conn, day))
+if trend.empty:
+    st.info("Not enough data yet for a trend.")
+else:
+    st.line_chart(trend.pivot(index="day", columns="store", values="score"))
+st.caption("A gap means the store had no score that day: nobody had checked it yet.")
 
 st.header("This week's problems")
 st.markdown(f"Verified problems in the {settings.PROBLEMS_DAYS} days up to **{day}**, newest first.")

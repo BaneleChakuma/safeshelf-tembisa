@@ -40,6 +40,7 @@ Numbers match the GitHub issue numbers when the board is created on a new reposi
 | 27 | Community dashboard (Streamlit) | user story | could | Stretch goals |
 | 28 | Capture shelf checks on a phone (Google Forms) | user story | could | Stretch goals |
 | 29 | Move the database to MySQL or PostgreSQL in Docker | task | could | Stretch goals |
+| 30 | Store score trend on the community dashboard | user story | could | Stretch goals |
 
 ## Iteration 0 - Plan and set up (due 2026-10-18)
 
@@ -473,3 +474,17 @@ Run the database as a real server, closer to what companies use.
 - [ ] The schema and reports work on the new database
 - [ ] Real database users and roles replace the SQLite views for access control
 - [ ] The README explains how to switch
+
+### 30. Store score trend on the community dashboard
+
+`user story` · `epic: reports` · `priority: could`
+
+**User story**
+As a community member, I want to see how a store's score has changed over time, so that I can
+tell whether it's getting safer or worse, not just where it stands today.
+
+**Acceptance criteria**
+- [ ] A line chart on the dashboard, one line per store, built only from `store_scoreboard` (#18):
+      no new SQL and no new database role
+- [ ] Covers the last `settings.TREND_DAYS` days
+- [ ] A day with no score for a store (not yet checked) leaves a gap, not a misleading drop to 0
