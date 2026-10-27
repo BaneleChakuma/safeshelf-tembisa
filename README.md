@@ -29,43 +29,49 @@ A data pipeline checks and cleans this data, loads it into a SQL database and pr
 
 ## Architecture
 
+Four CSV files arrive every day — deliveries, shelf checks, community reports and truck trip
+updates. Each one goes through the same five steps before it reaches a report: **extract, clean,
+validate, load, report**. The diagram shows that flow left to right; the steps below explain each
+box.
+
 ```mermaid
-flowchart LR
-    subgraph Sources["Daily CSV files (simulated)"]
-        A["Deliveries"]
-        B["Shelf checks"]
-        C["Community reports"]
-        D["Truck trip updates"]
-    end
-    Sources --> E["Extract<br/>new files only"]
-    E --> F["Clean<br/>names, dates, product aliases,<br/>phone numbers removed"]
-    F --> G["Validate<br/>data quality rules"]
-    G -- "bad rows, with the reason" --> R["data/rejected/"]
-    G --> L["Load<br/>one transaction per file"]
-    L --> DB[("PostgreSQL<br/>+ pipeline_runs")]
-    DB --> V1["committee_view"]
-    DB --> V2["store_view"]
-    DB --> V3["community_view"]
-    DB --> V4["police_view"]
-    V1 --> DR["Daily report<br/>reports/"]
-    V2 --> DR
-    V3 --> DR
-    V4 --> PR["Police report<br/>reports/police/"]
+flowchart TD
+    Sources["Daily CSV files, simulated:<br/>deliveries, shelf checks,<br/>community reports, truck trips"]
+    Extract["1. Extract<br/>only new files"]
+    Clean["2. Clean<br/>dates, product names,<br/>phone numbers removed"]
+    Validate["3. Validate<br/>against data quality rules"]
+    Rejected["data/rejected/<br/>bad rows, with the reason"]
+    Load["4. Load<br/>one transaction per file"]
+    DB[("PostgreSQL<br/>pipeline_runs table")]
+    Views["A view per audience:<br/>committee, store,<br/>community, police"]
+    DailyReport["5. Daily report<br/>reports/"]
+    PoliceReport["5. Police report<br/>reports/police/, police only"]
+
+    Sources --> Extract --> Clean --> Validate
+    Validate -- "bad row" --> Rejected
+    Validate --> Load --> DB --> Views
+    Views --> DailyReport
+    Views --> PoliceReport
 ```
 
-- **Extract** picks up only files that aren't in the `pipeline_runs` table yet, so running it
-  twice never loads anything twice.
-- **Clean** writes every value the same way: dates as `YYYY-MM-DD`, product aliases like
-  "BREAD WHITE" become one product ID. It also removes phone and ID numbers from community reports.
-- **Validate** checks each row against the [data quality rules](docs/PLAN.md#data-quality-rules).
-  Bad rows go to `data/rejected/` with the reason, so they can be fixed and sent again.
-- **Load** saves a file's rows and its `pipeline_runs` record in one transaction, so either both
-  are saved or neither is.
-- **Report**: each report reads from a view made for its audience, so it can only use what that
-  audience may see. Truck locations exist only in `police_view`, and they're removed after 30 days.
+1. **Extract** — only picks up files that aren't already recorded in the `pipeline_runs` table.
+   That's what makes it safe to run the pipeline twice: the second run loads nothing new.
+2. **Clean** — makes every value consistent. Dates all become `YYYY-MM-DD`, and product aliases
+   like "BREAD WHITE" collapse to one product ID. It also strips phone and ID numbers out of
+   community reports before anything is stored.
+3. **Validate** — checks each row against the [data quality rules](docs/PLAN.md#data-quality-rules).
+   A row that fails doesn't get silently dropped: it's written to `data/rejected/` along with the
+   reason it failed, so it can be corrected and resent.
+4. **Load** — writes a file's rows and its `pipeline_runs` record together, in one database
+   transaction. Either both are saved, or neither is — there's no in-between state where a file
+   looks loaded but its rows aren't there.
+5. **Report** — each report is generated from a database view built for one audience, so it
+   physically can't see data meant for someone else. Truck locations, for example, only exist in
+   `police_view`, and are deleted after 30 days.
 
-The tables, keys and relationships are in the **[ER diagram (docs/DATA_MODEL.md)](docs/DATA_MODEL.md)**,
-and who can see what is in [DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md).
+For the underlying tables and relationships, see the
+**[ER diagram](docs/DATA_MODEL.md)**. For who's allowed to see what, see
+**[DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md)**.
 
 ## How to run
 
@@ -249,8 +255,9 @@ goes to `reports/police/` and isn't shown here.
 
 ## Screenshots
 
-The project board: every user story and task is an issue, and each card moves from *Todo* to
-*Done* through *In Progress* and *Testing*.
+The project board kept work organised, and milestones were used to simulate deadlines: every user
+story and task is an issue, and each card moves from *Todo* to *Done* through *In Progress* and
+*Testing*.
 
 ![The SafeShelf Tembisa project board on GitHub](docs/images/board.png)
 
@@ -290,7 +297,6 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · G
 | `src/safeshelf/` | The pipeline's Python package: extract, validate, clean, load, reports |
 | `tests/` | Unit, acceptance and end-to-end tests — see [the testing guide](docs/TESTING.md) |
 | `setup/` | One-off scripts for setting up the GitHub repo and project board |
-| `scripts/` | `demo.sh`, the live part of the demo |
 
 ## Project docs
 
@@ -301,7 +307,6 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · G
 | [Data model](docs/DATA_MODEL.md) | ER diagram, tables, keys and constraints |
 | [Data governance](docs/DATA_GOVERNANCE.md) | Privacy (POPIA): who can see what, and for how long |
 | [Testing](docs/TESTING.md) | How to run the tests, and what each one expects from the code |
-| [Demo](docs/DEMO.md) | The 5-minute demo: outline, what to show, and likely questions |
 | [Google Form](docs/GOOGLE_FORM.md) | Setting up the Form for shelf checks from a phone, and importing its responses |
 
 ## What I learned
