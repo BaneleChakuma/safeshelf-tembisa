@@ -47,8 +47,9 @@ Every role can also read `stores`, `suppliers` and `products`: business details 
 | Rejected truck updates lose their location after 30 days too, on every run. A rejected row's time is often what's wrong with it, so its age comes from the file's date | `privacy.py` (`apply_retention_to_rejected`) |
 | The daily report has no truck data and no names; police alerts go to their own folder, `reports/police/` | `reports.py` |
 | The scoreboard counts verified findings only | `community_view`, `sql/reports/store_scoreboard.sql` |
+| The online dashboard has a login of its own that can only act as `safeshelf_community`, and no database password is ever committed | `db.py` (`create_dashboard_login`), `.gitignore` |
 
-Tests check every one of these rules (`tests/acceptance/test_story_21_role_views.py`, `test_story_22_privacy.py`, `test_story_29_postgres_roles.py` and others).
+Tests check every one of these rules (`tests/acceptance/test_story_21_role_views.py`, `test_story_22_privacy.py`, `test_story_29_postgres_roles.py`, `test_story_66_hosted_database.py` and others).
 
 ## Data lifecycle
 
@@ -56,9 +57,19 @@ Tests check every one of these rules (`tests/acceptance/test_story_21_role_views
 |---|---|
 | **Acquisition** | Collect only the fields in the templates (`data/templates/`). Reports are anonymous. Committee members and drivers are told what's collected and why, and agree to it |
 | **Processing** | Clean and validate; keep rejected records separate with reasons, and with the same privacy rules (no phone or ID numbers, locations removed after 30 days); never guess missing values |
-| **Storage** | A PostgreSQL database in Docker, which only this computer can connect to; its data is never committed to GitHub. Locations live only in `trip_events` |
+| **Storage** | A PostgreSQL database in Docker, which only this computer can connect to, or a hosted copy for the online dashboard ([below](#hosting-the-database-online)). Its data is never committed to GitHub. Locations live only in `trip_events` |
 | **Sharing** | The community gets the scoreboard only, and the police get trip alerts only. Nothing is shared with third parties |
 | **Retention and disposal** | Locations are removed after 30 days on every run, from the database and from rejected files. Other records are kept for 1 year; that clean-up isn't automated yet |
+
+## Hosting the database online
+
+For the online dashboard (#66), the database can run on a hosted PostgreSQL service such as Neon or Supabase. The pipeline loads everything into it, **truck locations included**, so police data is then stored by a third party.
+
+That's allowed **for simulated data only**, which is all this project has. The same rules still apply there: the roles and views, and locations removed after 30 days. Choose a region in or close to South Africa where the service offers one.
+
+The dashboard connects with a login of its own (`python -m safeshelf dashboard-login`), which can only act as `safeshelf_community`. Its password is stored in the hosting service's secrets, so it's the one most likely to leak. With it, nobody can read truck data, names or report text, act as another audience, or change anything.
+
+**Before any real data is used**, this decision must be made again. Real truck locations show where drivers are. They shouldn't go to a third-party server without an agreement with the police and the suppliers, and an operator that meets POPIA's rules on processing and on sending data across borders. The simplest safe choice is to keep police data out of the hosted database altogether.
 
 ## Being fair to stores
 

@@ -41,6 +41,9 @@ Numbers match the GitHub issue numbers when the board is created on a new reposi
 | 28 | Capture shelf checks on a phone (Google Forms) | user story | could | Stretch goals |
 | 29 | Move the database to MySQL or PostgreSQL in Docker | task | could | Stretch goals |
 | 30 | Store score trend on the community dashboard | user story | could | Stretch goals |
+| 31 | Host the database online | task | could | Stretch goals |
+| 32 | Put the community dashboard online | user story | could | Stretch goals |
+| 33 | Run the daily pipeline against the online database | user story | could | Stretch goals |
 
 ## Iteration 0 - Plan and set up (due 2026-10-18)
 
@@ -488,3 +491,45 @@ tell whether it's getting safer or worse, not just where it stands today.
       no new SQL and no new database role
 - [ ] Covers the last `settings.TREND_DAYS` days
 - [ ] A day with no score for a store (not yet checked) leaves a gap, not a misleading drop to 0
+
+### 31. Host the database online
+
+`task` · `epic: automation` · `priority: could` · GitHub issue #66 on this repository
+
+**What needs doing**
+Run the PostgreSQL database on a free hosted service, so the dashboard and the daily pipeline can reach it from the internet, not only from this computer. The code doesn't change: everything finds the database through `SAFESHELF_DATABASE_URL` (#29).
+
+**Acceptance criteria**
+- [ ] A free hosted PostgreSQL 16 database (Neon or Supabase)
+- [ ] `sql/schema.sql` creates the tables, views and roles on it, the same as it does in Docker
+- [ ] A separate login for the dashboard that can only become `safeshelf_community`, so a leaked dashboard password still can't read truck data, names or report text (#21)
+- [ ] No passwords in the repository: they live only in GitHub and Streamlit secrets
+- [ ] `docs/DATA_GOVERNANCE.md` says whether police data is stored online and, if it is, why the hosting region is acceptable under POPIA (#22)
+- [ ] The README explains how to point the pipeline at the hosted database
+
+### 32. Put the community dashboard online
+
+`user story` · `epic: reports` · `priority: could` · GitHub issue #67 on this repository
+
+**User story**
+As a community member, I want to open the dashboard on my phone from a link, so that I can check the stores without needing the computer it runs on.
+
+**Acceptance criteria**
+- [ ] The dashboard (#27) runs on Streamlit Community Cloud, from `main`, with a public link
+- [ ] It reads the hosted database through the dashboard login only, set as a Streamlit secret
+- [ ] The page says clearly that it shows simulated demo data, so nobody takes the store scores as real
+- [ ] Every merge to `main` updates the live page
+- [ ] The README has the link and explains how the deployment is set up
+
+### 33. Run the daily pipeline against the online database
+
+`user story` · `epic: automation` · `priority: could` · GitHub issue #68 on this repository
+
+**User story**
+As a community member, I want the online dashboard to show fresh data every day, so that what I see is up to date without anyone running the pipeline by hand.
+
+**Acceptance criteria**
+- [ ] The daily GitHub Actions run (#25) loads into the hosted database, using `SAFESHELF_DATABASE_URL` from a repository secret
+- [ ] Tests on pushes and pull requests still use their own database, never the hosted one
+- [ ] A failed daily run shows up as a failed workflow, not a silently stale dashboard
+- [ ] Running it twice in a day loads nothing new (#11)

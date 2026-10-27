@@ -4,6 +4,7 @@
     python -m safeshelf rebuild [--today YYYY-MM-DD] [--root FOLDER]
     python -m safeshelf import-form EXPORT.csv [--today YYYY-MM-DD] [--root FOLDER]   (#28)
     python -m safeshelf dashboard [--port PORT] [--no-browser]   (#27)
+    SAFESHELF_DASHBOARD_PASSWORD=... python -m safeshelf dashboard-login NAME   (#66)
 """
 
 import argparse
@@ -43,6 +44,9 @@ def main(argv: list[str] | None = None) -> int:
     dashboard = commands.add_parser("dashboard", help="open the community dashboard in your browser")
     dashboard.add_argument("--port", type=int, default=8501, help="the web page's port (default: 8501)")
     dashboard.add_argument("--no-browser", action="store_true", help="start it without opening a browser")
+    login = commands.add_parser("dashboard-login", parents=[common],
+                                help="give the online dashboard a login that can only see what the community may")
+    login.add_argument("name", help="the login's name, for example dashboard")
     args = parser.parse_args(argv)
 
     if args.command == "import-form":
@@ -50,6 +54,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "dashboard":
         return run_dashboard(args.port, open_browser=not args.no_browser)
+
+    if args.command == "dashboard-login":
+        return dashboard_login(args.name)
 
     try:
         if args.command == "rebuild":
@@ -90,6 +97,27 @@ def import_form(args: argparse.Namespace) -> int:
     print(f"Already imported:   {result['already_imported']}")
     if result["file"]:
         print(f"Written to {result['file']}. Run `python -m safeshelf run` to load them.")
+    return 0
+
+
+def dashboard_login(name: str) -> int:
+    """#66. The password comes from SAFESHELF_DASHBOARD_PASSWORD, not the command line, so it isn't
+    saved in the shell's history. It's never printed."""
+    password = os.environ.get("SAFESHELF_DASHBOARD_PASSWORD")
+    if not password:
+        print("Error: set SAFESHELF_DASHBOARD_PASSWORD to the login's new password first", file=sys.stderr)
+        return 1
+    try:
+        conn = db.connect()
+        try:
+            db.create_dashboard_login(conn, name, password)
+        finally:
+            conn.close()
+    except (psycopg.Error, ValueError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+    print(f"The dashboard login {name} is ready. It can only see what safeshelf_community may see.")
+    print("Put its address in the dashboard's SAFESHELF_DATABASE_URL secret, never in the repository.")
     return 0
 
 
