@@ -4,6 +4,7 @@ import csv
 from pathlib import Path
 
 import psycopg
+from psycopg import sql
 
 from safeshelf.settings import SQL_DIR, database_url
 
@@ -44,6 +45,34 @@ def community_connection(url: str | None = None) -> psycopg.Connection:
     conn = connect(url)
     conn.execute("SET ROLE safeshelf_community")
     return conn
+
+
+def create_dashboard_login(conn: psycopg.Connection, name: str, password: str) -> None:
+    """A login for the online dashboard (#66) that can only become safeshelf_community, or a new
+    password for one that exists. Its password sits in Streamlit's settings, so it's the one most
+    likely to leak: with it, nobody can read another audience's data or change anything.
+
+    NOINHERIT: until it switches to safeshelf_community (community_connection does that), it can't
+    read even the community's view. Run this as the pipeline's own user, after create_schema."""
+    with conn.transaction():
+        me = conn.execute("SELECT current_user").fetchone()[0]
+        if name == me or name.startswith("safeshelf_"):
+            raise ValueError(f"{name} is one of SafeShelf's own roles, not a dashboard login: choose another name")
+        existing = conn.execute(
+            "SELECT pg_has_role(oid, 'safeshelf_community', 'MEMBER') AND NOT (rolsuper OR rolcreaterole OR rolcreatedb)"
+            " FROM pg_roles WHERE rolname = %s", [name]
+        ).fetchone()
+        if existing and not existing[0]:
+            raise ValueError(f"{name} already exists and isn't a dashboard login: choose another name")
+
+        # CREATE ROLE and ALTER ROLE don't take parameters, so the name and password are quoted here.
+        # Only a superuser may even write NOSUPERUSER in ALTER ROLE, so a new password is all that changes.
+        if existing:
+            conn.execute(sql.SQL("ALTER ROLE {} WITH PASSWORD {}").format(sql.Identifier(name), sql.Literal(password)))
+        else:
+            conn.execute(sql.SQL("CREATE ROLE {} WITH LOGIN NOINHERIT PASSWORD {}")
+                         .format(sql.Identifier(name), sql.Literal(password)))
+            conn.execute(sql.SQL("GRANT safeshelf_community TO {}").format(sql.Identifier(name)))
 
 
 def create_schema(conn: psycopg.Connection) -> None:

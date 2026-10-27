@@ -17,3 +17,7 @@ venv/
 
 # IntelliJ IDEA module file
 *.iml
+
+# Passwords (#66): the hosted database's address lives in GitHub and Streamlit secrets, never here
+.env
+.streamlit/secrets.toml

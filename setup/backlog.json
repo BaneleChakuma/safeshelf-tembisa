@@ -409,6 +409,46 @@
       ],
       "milestone": "Stretch goals",
       "body": "**What needs doing**\nRun the database as a real server, closer to what companies use.\n\n**Acceptance criteria**\n- [ ] `docker-compose.yml` starts MySQL or PostgreSQL\n- [ ] The schema and reports work on the new database\n- [ ] Real database users and roles replace the SQLite views for access control\n- [ ] The README explains how to switch\n"
+    },
+    {
+      "title": "Store score trend on the community dashboard",
+      "labels": [
+        "user story",
+        "epic: reports",
+        "priority: could"
+      ],
+      "milestone": "Stretch goals",
+      "body": "**User story**\nAs a community member, I want to see how a store's score has changed over time, so that I can tell whether it's getting safer or worse, not just where it stands today.\n\n**Acceptance criteria**\n- [ ] A line chart on the dashboard, one line per store, built only from `store_scoreboard` (#18): no new SQL and no new database role\n- [ ] Covers the last `settings.TREND_DAYS` days\n- [ ] A day with no score for a store (not yet checked) leaves a gap, not a misleading drop to 0\n"
+    },
+    {
+      "title": "Host the database online",
+      "labels": [
+        "task",
+        "epic: automation",
+        "priority: could"
+      ],
+      "milestone": "Stretch goals",
+      "body": "**What needs doing**\nRun the PostgreSQL database on a free hosted service, so the dashboard and the daily pipeline can reach it from the internet, not only from this computer. The code doesn't change: everything finds the database through `SAFESHELF_DATABASE_URL` (#29).\n\n**Acceptance criteria**\n- [ ] A free hosted PostgreSQL 16 database (Neon or Supabase)\n- [ ] `sql/schema.sql` creates the tables, views and roles on it, the same as it does in Docker\n- [ ] A separate login for the dashboard that can only become `safeshelf_community`, so a leaked dashboard password still can't read truck data, names or report text (#21)\n- [ ] No passwords in the repository: they live only in GitHub and Streamlit secrets\n- [ ] `docs/DATA_GOVERNANCE.md` says whether police data is stored online and, if it is, why the hosting region is acceptable under POPIA (#22)\n- [ ] The README explains how to point the pipeline at the hosted database\n"
+    },
+    {
+      "title": "Put the community dashboard online",
+      "labels": [
+        "user story",
+        "epic: reports",
+        "priority: could"
+      ],
+      "milestone": "Stretch goals",
+      "body": "**User story**\nAs a community member, I want to open the dashboard on my phone from a link, so that I can check the stores without needing the computer it runs on.\n\n**Acceptance criteria**\n- [ ] The dashboard (#27) runs on Streamlit Community Cloud, from `main`, with a public link\n- [ ] It reads the hosted database through the dashboard login only, set as a Streamlit secret\n- [ ] The page says clearly that it shows simulated demo data, so nobody takes the store scores as real\n- [ ] Every merge to `main` updates the live page\n- [ ] The README has the link and explains how the deployment is set up\n"
+    },
+    {
+      "title": "Run the daily pipeline against the online database",
+      "labels": [
+        "user story",
+        "epic: automation",
+        "priority: could"
+      ],
+      "milestone": "Stretch goals",
+      "body": "**User story**\nAs a community member, I want the online dashboard to show fresh data every day, so that what I see is up to date without anyone running the pipeline by hand.\n\n**Acceptance criteria**\n- [ ] The daily GitHub Actions run (#25) loads into the hosted database, using `SAFESHELF_DATABASE_URL` from a repository secret\n- [ ] Tests on pushes and pull requests still use their own database, never the hosted one\n- [ ] A failed daily run shows up as a failed workflow, not a silently stale dashboard\n- [ ] Running it twice in a day loads nothing new (#11)\n"
     }
   ]
 }

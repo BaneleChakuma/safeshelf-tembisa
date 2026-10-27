@@ -222,6 +222,43 @@ and the public store list. PostgreSQL refuses anything else: no truck data, no n
 report text, even if the page had a mistake in it. `--port` picks another port, and `--no-browser`
 starts it without opening a browser.
 
+## Hosting the database online
+
+To put the dashboard online, the database has to be online too. Any hosted PostgreSQL 16 works,
+for example the free tier of [Neon](https://neon.tech) or [Supabase](https://supabase.com). Nothing
+in the code changes: every command finds the database through `SAFESHELF_DATABASE_URL`.
+
+1. Create a database there and copy its address. It looks like
+   `postgresql://user:password@host/dbname?sslmode=require`.
+2. Put the addresses in a file called `.env` in the project folder. Git ignores it, so the
+   passwords never reach GitHub:
+
+   ```bash
+   SAFESHELF_DATABASE_URL='the address from step 1'
+   SAFESHELF_DASHBOARD_PASSWORD='a new, long password for the dashboard'
+   ```
+
+3. Load it, build the tables and fill them, then give the dashboard its own login:
+
+   ```bash
+   set -a; source .env; set +a
+   PYTHONPATH=src python -m safeshelf run --days 30
+   PYTHONPATH=src python -m safeshelf dashboard-login dashboard
+   ```
+
+The dashboard login can only act as the community's role. Its password goes in the dashboard's
+settings on the internet, so it's the one most likely to leak. Even so, it can't read truck data,
+names or report text, act as another audience, or change anything. The dashboard's address is the
+one from step 1 with `dashboard` and its password as the user and password. Keep it only in the
+hosting service's secrets, never in the repository.
+
+The hosted database holds the police data too, which is allowed for simulated data only:
+[DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md#hosting-the-database-online) explains why.
+
+The tests can run against a hosted-style server too: set `SAFESHELF_TEST_DATABASE_URL` to a
+spare database (not the live one) whose user isn't a superuser. That's how hosted databases work, and PostgreSQL treats
+roles a little differently for them.
+
 ## Sample report
 
 This is part of the daily report from `run --days 30 --seed 42 --today 2026-10-26` (the full

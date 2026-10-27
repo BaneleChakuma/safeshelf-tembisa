@@ -239,6 +239,7 @@ LEFT JOIN trip_events e ON e.trip_id = t.trip_id;
 -- The pipeline runs each report as its audience's role (src/safeshelf/reports.py).
 -- Roles belong to the whole server, so they're created only if they don't exist yet.
 -- To give a person a login: CREATE USER thandi PASSWORD '...' IN ROLE safeshelf_committee;
+-- The online dashboard gets its own: python -m safeshelf dashboard-login (#66).
 -- =========================================================================================
 
 DO $$
@@ -252,8 +253,10 @@ BEGIN
         END IF;
         EXECUTE format('GRANT USAGE ON SCHEMA %I TO %I', current_schema(), audience);
         -- The pipeline's own user may act as each audience, to run that audience's reports.
-        IF NOT pg_has_role(current_user, audience, 'MEMBER') THEN
-            EXECUTE format('GRANT %I TO %I', audience, current_user);
+        -- 'SET', not 'MEMBER': on a hosted database (#66) the pipeline isn't a superuser, and
+        -- PostgreSQL 16 makes the user who creates a role its admin, without letting it act as it.
+        IF NOT pg_has_role(current_user, audience, 'SET') THEN
+            EXECUTE format('GRANT %I TO %I WITH SET TRUE', audience, current_user);
         END IF;
     END LOOP;
 END
