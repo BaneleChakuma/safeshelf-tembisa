@@ -390,11 +390,25 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · G
   tried again next time, while the rest still load.
 - **Privacy is easier in the database than in the reports.** Each report reads from a view made for
   its audience, so a community report can't show a truck's location even by mistake.
+- **Let the database say no.** When each report started running as its audience's role, PostgreSQL
+  refused the scoreboard straight away: it was reading the `stores` table, which I had forgotten to
+  allow. A rule in the database catches the mistakes I don't know I'm making.
+- **Real data is never like the test data.** My own CSV files loaded fine, but the first real Google
+  Form download came as a zip file, with times in another time zone (GMT+3) and question titles
+  with extra lines and spaces. A check sent late at night looked like it came from tomorrow and was
+  rejected. Now the real download is kept as a test file.
+- **Some mistakes can't be caught.** A batch code typed wrongly on the phone (81026-101) still looked
+  like a real batch code, so it passed every check. Validation can stop impossible data, not wrong
+  data that looks right. A person still has to look.
 - **A fair score needs a rate, not a count.** The first scoreboard took 10 points off per problem,
   so stores that were checked most often dropped to 0. Counting problems as a share of the checks
   fixed that, and a store nobody has checked now has no score instead of a perfect one.
 - **Write the tests from the user stories first.** The acceptance tests came before the code, so
   each story was done when its tests passed.
+- **Running online is different from running on my computer.** On the hosted database the pipeline
+  isn't the superuser, so the roles needed one more permission. Streamlit could only install my
+  packages on Python 3.12, Neon refused a weak password, and the daily run needs its address as a
+  secret. A daily run that fails loudly is better than a dashboard that is quietly out of date.
 - **Plan in small steps on a board.** Issues, milestones and a project board kept the work visible,
   and I could move it on when the plan changed (Iterations 1-4 became one week).
 
