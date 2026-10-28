@@ -4,7 +4,7 @@
 
 **A data pipeline that helps communities keep expired and spoiled food off supermarket shelves, and keeps delivery trucks safe.**
 
-> 🚧 **Status: in progress.** The pipeline runs end to end on simulated data. See the [project plan](docs/PLAN.md), the [user stories](docs/USER_STORIES.md) and the project board (Projects tab).
+> ✅ **Status: complete.** The pipeline runs end to end on simulated data every morning, and the [live dashboard](#community-dashboard) shows the results. See the [project plan](docs/PLAN.md), the [user stories](docs/USER_STORIES.md) and the project board (Projects tab).
 
 ## The problem
 
@@ -400,7 +400,6 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · G
 
 ## Next steps
 
-- **Shelf checks captured on a phone** with Google Forms, instead of CSV files ([#28](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/28))
 - **Real data**: a pilot with one committee and one store, to see how the rules and scores hold up
 
 ## About the data
