@@ -160,10 +160,18 @@ only accepts connections from this computer.
 ## Automation
 
 GitHub Actions ([`.github/workflows/pipeline.yml`](.github/workflows/pipeline.yml)) runs the tests on
-every push and pull request, on Python 3.10 and 3.12. Every morning at 06:00 it also runs the
-pipeline on 30 days of simulated data and uploads the daily report as an artifact called
-`daily-report`. To run it yourself, open the Actions tab, choose *Pipeline* and press *Run workflow*.
-The police report is never uploaded: truck locations are for the police only.
+every push and pull request, on Python 3.10 and 3.12, each time with a PostgreSQL server of its own.
+Every morning at 06:00 it also runs the pipeline on 30 days of simulated data against the
+[hosted database](#hosting-the-database-online), so the live dashboard shows a new day, and
+uploads the daily report as an artifact called `daily-report`. The hosted database already has the
+earlier days, so only the new day's files load. To run it yourself, open the Actions tab, choose
+*Pipeline* and press *Run workflow*. The police report is never uploaded: truck locations are for
+the police only.
+
+The daily run needs the hosted database's address (the pipeline's, `neondb_owner` on Neon) as a
+repository secret: on GitHub, open *Settings > Secrets and variables > Actions*, choose *New
+repository secret*, and name it `SAFESHELF_DATABASE_URL`. Without it, the run stops with an error
+that says so. The tests never get the secret.
 
 On Ubuntu or Pop!_OS, if `python3 -m venv` complains, run `sudo apt install python3-venv` first.
 Run `source .venv/bin/activate` again in every new terminal.
@@ -393,7 +401,6 @@ Python 3 · PostgreSQL 16 / SQL · Docker · psycopg · Streamlit · pytest · G
 ## Next steps
 
 - **Shelf checks captured on a phone** with Google Forms, instead of CSV files ([#28](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/28))
-- **Fresh data online every day**: the daily GitHub Actions run loading into the hosted database ([#68](https://github.com/BaneleChakuma/safeshelf-tembisa/issues/68))
 - **Real data**: a pilot with one committee and one store, to see how the rules and scores hold up
 
 ## About the data

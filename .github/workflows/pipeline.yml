@@ -2,10 +2,13 @@
 #
 #   tests          on every push and pull request: python -m pytest
 #   daily-report   every morning (and from the Actions tab: "Run workflow"): runs the pipeline on
-#                  30 days of simulated data and uploads the daily report
+#                  30 days of simulated data against the hosted database, which the live
+#                  dashboard reads (#68), and uploads the daily report
 #
-# Both jobs get their own PostgreSQL server (#29), like the one docker-compose.yml starts, so the
-# pipeline and the tests find it at its usual address. See the results in the Actions tab.
+# The tests get their own PostgreSQL server (#29), like the one docker-compose.yml starts, so they
+# never touch the hosted database. The daily run finds that one through the repository secret
+# SAFESHELF_DATABASE_URL (Settings > Secrets and variables > Actions). See the results in the
+# Actions tab.
 
 name: Pipeline
 
@@ -51,22 +54,10 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     needs: tests
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: safeshelf
-          POSTGRES_USER: safeshelf
-          POSTGRES_PASSWORD: safeshelf
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U safeshelf -d safeshelf"
-          --health-interval 2s
-          --health-timeout 3s
-          --health-retries 15
+    # No database of its own: with one, a missing secret would "succeed" and update nothing.
     env:
       TZ: Africa/Johannesburg  # so "today" and the police report's "now" are Tembisa's time
+      SAFESHELF_DATABASE_URL: ${{ secrets.SAFESHELF_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -74,6 +65,14 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Check the hosted database's secret is set
+        run: |
+          if [ -z "$SAFESHELF_DATABASE_URL" ]; then
+            echo "::error::Set the repository secret SAFESHELF_DATABASE_URL to the hosted database's address (README: Hosting the database online)"
+            exit 1
+          fi
+      # The database already has every earlier day, so only today's new files load (#11). The
+      # run fails if a file fails, so a stale dashboard shows up as a red run here.
       - run: python -m safeshelf run --days 30
         env:
           PYTHONPATH: src
