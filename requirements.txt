@@ -4,3 +4,4 @@ psycopg[binary]==3.2.3  # talks to the PostgreSQL database (#29)
 pytest==9.1.1
 streamlit==1.40.2  # the community dashboard (#27)
 pandas==2.3.3  # shapes the score trend chart's data (#30)
+pyyaml==6.0.3  # the tests read the GitHub Actions workflow (#68)
