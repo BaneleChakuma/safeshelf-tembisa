@@ -8,9 +8,9 @@
 
 ## Demo video
 
-[![SafeShelf Tembisa – walkthrough and live demo](https://img.youtube.com/vi/PGx57EEtVA8/maxresdefault.jpg)](https://youtu.be/PGx57EEtVA8)
+[![SafeShelf Tembisa – walkthrough and live demo](https://img.youtube.com/vi/53W4K3WB_Zk/maxresdefault.jpg)](https://youtu.be/53W4K3WB_Zk)
 
-▶️ **[Watch the walkthrough and live demo on YouTube](https://youtu.be/PGx57EEtVA8)** (11 min): the idea and architecture, then the pipeline running end to end on simulated data.
+▶️ **[Watch the walkthrough and live demo on YouTube](https://youtu.be/53W4K3WB_Zk)** (11 min): the idea and architecture, then the pipeline running end to end on simulated data.
 
 ## The problem
 
