@@ -6,6 +6,12 @@
 
 > ✅ **Status: complete.** The pipeline runs end to end on simulated data every morning, and the [live dashboard](#community-dashboard) shows the results. See the [project plan](docs/PLAN.md), the [user stories](docs/USER_STORIES.md) and the project board (Projects tab).
 
+## Demo video
+
+[![SafeShelf Tembisa – walkthrough and live demo](https://img.youtube.com/vi/PGx57EEtVA8/maxresdefault.jpg)](https://youtu.be/PGx57EEtVA8)
+
+▶️ **[Watch the walkthrough and live demo on YouTube](https://youtu.be/PGx57EEtVA8)** (11 min): the idea and architecture, then the pipeline running end to end on simulated data.
+
 ## The problem
 
 In Tembisa, residents have raised concerns that some supermarkets and spaza shops sell food that has expired or gone bad. That includes bread, drinks and other everyday essentials near the end of their shelf life. Delivery trucks bringing stock into the area are also targets for hijackings.
