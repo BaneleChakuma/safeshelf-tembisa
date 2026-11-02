@@ -1,12 +1,12 @@
 # SafeShelf Tembisa
 
+**WTC code:** WTC-8GQ2XU9R
+
 [![Pipeline](https://github.com/BaneleChakuma/safeshelf-tembisa/actions/workflows/pipeline.yml/badge.svg?branch=main)](https://github.com/BaneleChakuma/safeshelf-tembisa/actions/workflows/pipeline.yml)
 
 **A data pipeline that helps communities keep expired and spoiled food off supermarket shelves, and keeps delivery trucks safe.**
 
 > ✅ **Status: complete.** The pipeline runs end to end on simulated data every morning, and the [live dashboard](#community-dashboard) shows the results. See the [project plan](docs/PLAN.md), the [user stories](docs/USER_STORIES.md) and the project board (Projects tab).
-
-**WTC code:** WTC-8GQ2XU9R
 
 ## Demo video
 
