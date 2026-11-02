@@ -6,6 +6,8 @@
 
 > ✅ **Status: complete.** The pipeline runs end to end on simulated data every morning, and the [live dashboard](#community-dashboard) shows the results. See the [project plan](docs/PLAN.md), the [user stories](docs/USER_STORIES.md) and the project board (Projects tab).
 
+**WTC code:** WTC-8GQ2XU9R
+
 ## Demo video
 
 [![SafeShelf Tembisa – walkthrough and live demo](https://img.youtube.com/vi/53W4K3WB_Zk/maxresdefault.jpg)](https://youtu.be/53W4K3WB_Zk)
